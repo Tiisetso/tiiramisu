@@ -1,0 +1,10 @@
+# Private event material (contains partner promo codes; repo is public)
+partner-report.md
+*Brief.pdf
+
+# Env
+.env
+.env*.local
+
+# OS
+.DS_Store
