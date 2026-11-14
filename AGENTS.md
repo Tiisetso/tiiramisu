@@ -62,7 +62,7 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 |---|---|---|---|
 | 1 | 1 | Scaffold Next.js + Vercel | in review |
 | 2 | 1 | Design system + light field | in review |
-| 3 | 1 | Demo persona + time slider | todo |
+| 3 | 1 | Demo persona + time slider | in review |
 | 4 | 1 | Voice check-in (on-device features) | todo |
 | 5 | 1 | `/api/analyze` (ElevenLabs STT → Claude) | todo |
 | 6 | 1 | Today screen | todo |
@@ -81,3 +81,5 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 - **Partner prizes:** ElevenLabs (STT + TTS + sound + voiceover). Codex optional.
 - **No Supabase/auth for the demo**: seeded persona + `BroadcastChannel` chat.
 - **Design** adapted from an Oura DESIGN.md analysis into our own system (Fraunces + Inter, dusk-blue action, care terracotta, night palette).
+- **Demo arc (Aino, `src/lib/demo/persona.ts`):** steady → wobble "watch" days 32–35 (recovers) → steady → "watch" day 52 → "drifting" 53–59. Self-reported mood barely drops while passive signals do (pitch point: the app notices first). URL: `?demo=1&day=44`.
+- **Signals (`src/lib/signals.ts`):** 7 signals vs a 28-day personal baseline (excluding the last 7 days); z-scores with SD floors, capped at 4; weighted drift score → steady / watch / drifting.

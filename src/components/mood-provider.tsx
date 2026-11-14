@@ -1,24 +1,23 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo } from "react";
 import type { Mood } from "@/lib/mood";
 
 interface MoodContextValue {
   mood: Mood;
-  setMood: (m: Mood) => void;
+  /** sets a manual override (presenter controls); null returns to automatic */
+  setMood: (m: Mood | null) => void;
 }
 
 const MoodContext = createContext<MoodContextValue | null>(null);
 
+/** Controlled: the demo state decides the mood; this just shares it. */
 export function MoodProvider({
-  initial = "calm",
+  mood,
+  setMood,
   children,
-}: {
-  initial?: Mood;
-  children: React.ReactNode;
-}) {
-  const [mood, setMood] = useState<Mood>(initial);
-  const value = useMemo(() => ({ mood, setMood }), [mood]);
+}: MoodContextValue & { children: React.ReactNode }) {
+  const value = useMemo(() => ({ mood, setMood }), [mood, setMood]);
   return <MoodContext.Provider value={value}>{children}</MoodContext.Provider>;
 }
 
