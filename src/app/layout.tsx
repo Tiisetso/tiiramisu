@@ -17,6 +17,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Tiiramisu",
   description: "A warm daily companion for staying well after treatment.",
+  applicationName: "Tiiramisu",
+  // iPhone "Add to Home Screen": opens full-screen like an app
+  appleWebApp: { capable: true, title: "Tiiramisu", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
