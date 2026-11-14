@@ -12,6 +12,7 @@ import { loadVoiceBaseline, saveVoiceBaseline, voiceDeltas, voicePhrase } from "
 import { MAX_SECONDS, useVoiceRecorder, type Recording } from "@/lib/voice/recorder";
 import { useDemoMode } from "@/lib/use-client";
 import { livePost } from "@/lib/live";
+import { getConsent, useConsent } from "@/lib/consent";
 
 type Phase = "intro" | "recording" | "thinking" | "result" | "typed";
 
@@ -45,10 +46,14 @@ export function CheckinScreen({ onDone }: { onDone: () => void }) {
   const demo = useDemoMode();
   const recorder = useVoiceRecorder(levelRef);
   const { duck } = useSound();
-  const [phase, setPhase] = useState<Phase>(checkin ? "result" : "intro");
+  const consent = useConsent();
+  // voice analysis switched off → the gentle typed check-in instead
+  const [phase, setPhase] = useState<Phase>(checkin ? "result" : consent.voice ? "intro" : "typed");
   const [result, setResult] = useState<CheckinResult | null>(checkin);
   const [crisisOpen, setCrisisOpen] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(
+    consent.voice ? null : "Voice check-ins are off. You can turn them on in Privacy & what's shared.",
+  );
   const [typedText, setTypedText] = useState("");
   const [typedMood, setTypedMood] = useState<number | null>(null);
 
@@ -97,8 +102,8 @@ export function CheckinScreen({ onDone }: { onDone: () => void }) {
     const r: CheckinResult = { day, response, voice, isBaseline };
     setResult(r);
     setCheckin(r);
-    // share with the clinic (features, transcript and analysis only; never audio)
-    void livePost("/api/checkins", {
+    // share with the clinic (features, transcript and analysis only; never audio), only if agreed
+    if (getConsent().shareWithClinic) void livePost("/api/checkins", {
       patientId: patient.id,
       day,
       transcript: response.transcript,

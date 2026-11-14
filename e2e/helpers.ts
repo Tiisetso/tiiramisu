@@ -14,12 +14,17 @@ export const BASE_ARGS = [
 /** Words that must never reach patient screens (DESIGN.md → Voice & Copy). */
 export const BANNED = /\b(risk|relapse|score|warning|failed|missed|streak)\b/i;
 
-export async function begin(page: Page, query: string) {
+export async function begin(page: Page, query: string, { onboarded = true } = {}) {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  if (onboarded) {
+    await page.addInitScript(() => {
+      if (!localStorage.getItem("tiiramisu.consent.v1")) localStorage.setItem("tiiramisu.consent.v1", JSON.stringify({ onboarded: true }));
+    });
+  }
   await page.goto(`/?${query}`);
   await page.getByRole("button", { name: "Begin" }).click();
-  await expect(page.getByText(/Good (morning|afternoon|evening)/)).toBeVisible();
+  if (onboarded) await expect(page.getByText(/Good (morning|afternoon|evening)/)).toBeVisible();
   return errors;
 }
 

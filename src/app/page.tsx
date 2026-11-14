@@ -11,6 +11,8 @@ import { ChatProvider } from "@/components/chat-provider";
 import { CircleScreen } from "@/components/circle/circle-screen";
 import { FriendView } from "@/components/circle/friend-view";
 import { LearningProvider } from "@/components/learning-provider";
+import { Onboarding } from "@/components/onboarding/onboarding";
+import { getConsent } from "@/lib/consent";
 import { LightField } from "@/components/light-field";
 import { FadeRise } from "@/components/motion";
 import { SoundProvider, useSound } from "@/components/sound-provider";
@@ -44,7 +46,7 @@ function Field() {
   return <LightField levelRef={levelRef} />;
 }
 
-type Screen = "begin" | Tab;
+type Screen = "begin" | "onboarding" | Tab;
 
 function App() {
   const [screen, setScreen] = useState<Screen>("begin");
@@ -59,9 +61,17 @@ function App() {
           name={persona.name}
           onBegin={() => {
             void sound.start(); // the tap is the gesture that unlocks audio (iOS)
-            setScreen("today");
+            setScreen(getConsent().onboarded ? "today" : "onboarding");
           }}
         />
+      </FadeRise>
+    );
+  }
+
+  if (screen === "onboarding") {
+    return (
+      <FadeRise key="onboarding" className="flex flex-1 flex-col">
+        <Onboarding onDone={() => setScreen("today")} />
       </FadeRise>
     );
   }
