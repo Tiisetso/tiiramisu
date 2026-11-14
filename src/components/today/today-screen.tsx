@@ -5,6 +5,7 @@ import { CrisisSheet } from "@/components/crisis-sheet";
 import { useDemo } from "@/components/demo-provider";
 import { Button, FadeRise } from "@/components/motion";
 import { Orb } from "@/components/orb";
+import { useSound } from "@/components/sound-provider";
 import { Sparkline } from "@/components/today/sparkline";
 import { greeting } from "@/lib/greeting";
 import { buildInsight, formatSignalValue, INTERVENTION_LABEL, splitItalic } from "@/lib/insight";
@@ -29,6 +30,7 @@ export function TodayScreen({ onCheckin }: { onCheckin: () => void }) {
   const { persona, days, day, today, state, checkin, levelRef } = useDemo();
   const hydrated = useHydrated();
   const [crisisOpen, setCrisisOpen] = useState(false);
+  const sound = useSound();
 
   const insight = buildInsight(state, checkin?.response.analysis.suggestion);
   const labels = days.slice(Math.max(0, day - 13), day + 1).map((d) => (d.day === day ? "Today" : WEEKDAYS[d.weekday].slice(0, 3)));
@@ -39,12 +41,24 @@ export function TodayScreen({ onCheckin }: { onCheckin: () => void }) {
     <main className="mx-auto flex w-full max-w-[560px] flex-col px-5 pt-[max(40px,env(safe-area-inset-top))] pb-32">
       <FadeRise className="flex items-center justify-between">
         <p className="eyebrow text-fg-2">{WEEKDAYS[today.weekday]}</p>
-        <button
-          onClick={() => setCrisisOpen(true)}
-          className="rounded-full border border-line bg-card px-3 py-1.5 text-[13px] font-medium text-fg-2"
-        >
-          Talk to someone
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => (sound.started ? sound.toggleMute() : void sound.start())}
+            aria-label={!sound.started || sound.muted ? "Turn sound on" : "Turn sound off"}
+            className="flex size-8 items-center justify-center rounded-full border border-line bg-card text-fg-2"
+          >
+            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M4 9.5v5h3.5L12 18V6L7.5 9.5z" />
+              {!sound.started || sound.muted ? <path d="m16 9.5 5 5m0-5-5 5" /> : <path d="M16 9a4.5 4.5 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" />}
+            </svg>
+          </button>
+          <button
+            onClick={() => setCrisisOpen(true)}
+            className="rounded-full border border-line bg-card px-3 py-1.5 text-[13px] font-medium text-fg-2"
+          >
+            Talk to someone
+          </button>
+        </div>
       </FadeRise>
 
       <FadeRise index={1}>
