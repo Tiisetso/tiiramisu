@@ -80,13 +80,14 @@ export function ActivitySheet({
     }
   };
 
+  // tallies already include this answer once recorded. Only computed while a step is open:
+  // on close `intervention` is null for one render before the reset above applies.
   const t = intervention ? tallies[intervention] : null;
-  // tallies already include this answer once recorded
   const thanks =
-    answer === null
+    !intervention || answer === null
       ? "Thanks for telling me."
       : answer
-        ? `Noted. ${interventionName(intervention!, friend)} has now helped you ${t?.helped} of ${t?.tried} times.`
+        ? `Noted. ${interventionName(intervention, friend)} has now helped you ${t?.helped} of ${t?.tried} times.`
         : "Thanks for being honest. I'll suggest something different next time.";
 
   return (
