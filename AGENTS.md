@@ -34,6 +34,7 @@ A warm, comforting web app companion:
 Health data in production would come from an **Apple Shortcut** that POSTs HealthKit samples to `/api/ingest` (web apps can't read HealthKit). **The demo runs on a seeded persona ("Aino", 60 days, drifting toward relapse at the end) with a hidden time slider**, so it works anywhere with no account.
 
 ### Evidence we lean on
+Full, cited list with caveats: [docs/references.md](docs/references.md). Add new studies there.
 - Flattened day/night rest-activity rhythm preceded relapse (JAMA Psychiatry, recovered MDD, n=93).
 - Less efficient sleep + irregular sleep midpoint → worse outcomes (RADAR-MDD).
 - Within-person drops in speaking rate, articulation rate, loudness and pitch variability track worse days (Interspeech 2025, n=71 daily; n=585 cohort).
