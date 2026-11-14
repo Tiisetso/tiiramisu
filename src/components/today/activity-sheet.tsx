@@ -10,6 +10,7 @@ import type { Intervention } from "@/lib/analysis";
 import { hasHave, interventionName } from "@/lib/learning";
 import { BreathingGuide } from "@/components/breathing-guide";
 import { stepFor } from "@/lib/steps";
+import { useConsent } from "@/lib/consent";
 import { bloom, soften } from "@/lib/field-events";
 
 type Step = "predict" | "do" | "ask" | "thanks";
@@ -50,6 +51,15 @@ const DID: Record<Intervention, string> = {
   rest: "let yourself rest",
 };
 
+/** First-person small win to share with the circle (never for messaging itself). */
+const WIN: Partial<Record<Intervention, string>> = {
+  walk: "Small win: I went outside today ✨",
+  light: "Small win: I let some light in today ✨",
+  breathe: "Small win: I took a few slow breaths ✨",
+  soundscape: "Small win: I took a calm moment ✨",
+  rest: "Small win: I let myself rest today ✨",
+};
+
 const PRESETS = ["Thinking of you", "Fancy a short walk this week?", "Just sending a wave"];
 
 /**
@@ -75,6 +85,8 @@ export function ActivitySheet({
   const [answer, setAnswer] = useState<boolean | null>(null);
   const [expected, setExpected] = useState<number | null>(null);
   const [better, setBetter] = useState(false);
+  const [shared, setShared] = useState(false);
+  const consent = useConsent();
 
   // reset when a new step is opened
   const [openFor, setOpenFor] = useState<Intervention | null>(null);
@@ -85,6 +97,7 @@ export function ActivitySheet({
     setAnswer(null);
     setExpected(null);
     setBetter(false);
+    setShared(false);
   }
 
 
@@ -267,6 +280,24 @@ export function ActivitySheet({
                   <h2 className="font-serif text-[28px] font-light leading-tight">{thanks}</h2>
                 )}
                 <div className="mt-8 flex flex-col gap-3">
+                  {answer === true && intervention && WIN[intervention] && consent.circle.includes("maya") && (
+                    shared ? (
+                      <p className="text-center text-[14px] text-fg-2" role="status">
+                        Shared with {friend} ✨
+                      </p>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        onClick={(e) => {
+                          chat.send("maya", WIN[intervention]!, "win");
+                          setShared(true);
+                          bloom("small", e.currentTarget, `shared a win with ${friend}`);
+                        }}
+                      >
+                        Tell {friend}?
+                      </Button>
+                    )
+                  )}
                   <Button onClick={onClose}>Back to today</Button>
                 </div>
               </>

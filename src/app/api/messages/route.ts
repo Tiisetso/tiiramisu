@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   return withDb(async (db) => {
     await db.query(
       "insert into messages (id, room, sender, text, kind) values ($1, $2, $3, $4, $5) on conflict (id) do nothing",
-      [m.id!.slice(0, 64), m.room, m.from, m.text!.slice(0, 1000), m.kind === "wave" ? "wave" : "text"],
+      [m.id!.slice(0, 64), m.room, m.from, m.text!.slice(0, 1000), m.kind === "wave" || m.kind === "win" ? m.kind : "text"],
     );
     // a real friend writing to Aino → one gentle notification (never the content on the lock screen)
     if (m.room !== "peers" && m.from !== "aino") {

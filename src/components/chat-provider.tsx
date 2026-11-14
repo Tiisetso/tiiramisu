@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { AUTO_REPLIES, PEER_SCRIPT, SEED_MESSAGES, type Message, type PersonId, type RoomId } from "@/lib/chat";
+import { AUTO_REPLIES, PEER_SCRIPT, SEED_MESSAGES, WIN_REPLIES, type Message, type PersonId, type RoomId } from "@/lib/chat";
 import { liveGet, livePost, useLive } from "@/lib/live";
 
 /**
@@ -134,6 +134,10 @@ export function ChatProvider({ me, children }: { me: PersonId; children: React.R
       if (!auto || me !== "aino") return;
       const realOnline = Date.now() - (lastSeen.current.get(auto.from) ?? 0) < 6000 || serverOnline.current.has(auto.from);
       if (realOnline) return;
+      if (kind === "win" && WIN_REPLIES[room]) {
+        timers.current.push(setTimeout(() => post({ id: uid(), room, from: auto.from, text: WIN_REPLIES[room]!, at: Date.now() }), auto.delay));
+        return;
+      }
       const i = replyIndex.current.get(room) ?? 0;
       replyIndex.current.set(room, i + 1);
       if (i >= auto.texts.length) return;
