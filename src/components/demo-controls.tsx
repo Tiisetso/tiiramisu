@@ -6,6 +6,7 @@ import { useDemo } from "@/components/demo-provider";
 import { useLearning } from "@/components/learning-provider";
 import { useMood } from "@/components/mood-provider";
 import { EASE_SOFT } from "@/components/motion";
+import { PATIENTS } from "@/lib/demo/patients";
 import { DAYS } from "@/lib/demo/persona";
 import { MOODS } from "@/lib/mood";
 import { clearVoiceBaseline } from "@/lib/voice/baseline";
@@ -23,7 +24,7 @@ export function DemoControls() {
   const enabled = useDemoMode();
   const [open, setOpen] = useState(false);
   const [voiceReset, setVoiceReset] = useState(false);
-  const { day, setDay, state, moodOverride } = useDemo();
+  const { day, setDay, state, moodOverride, patient } = useDemo();
   const { mood, setMood } = useMood();
   const { fresh, setFresh } = useLearning();
   if (!enabled) return null;
@@ -99,14 +100,32 @@ export function DemoControls() {
             </div>
             <p className="mt-2 text-[12px] text-fg-2">Current: {mood}</p>
 
-            <a
-              href={`/clinic?day=${day}`}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 block w-full rounded-full bg-neutral py-2 text-center text-[13px] font-medium text-on-neutral"
-            >
-              Open clinician view ↗
-            </a>
+            <p className="eyebrow mt-4 text-fg-2">Be someone else</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {PATIENTS.map((p) => (
+                <a key={p.id} href={`/?patient=${p.id}&day=${day}&demo=1`} className={chip(p.id === patient.id)}>
+                  {p.name.split(" ")[0]}
+                </a>
+              ))}
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-1.5">
+              <a
+                href={`/?as=maya&patient=${patient.id}&day=${day}`}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-full border border-line py-2 text-center text-[13px] font-medium"
+              >
+                Maya&rsquo;s phone ↗
+              </a>
+              <a
+                href={`/clinic?day=${day}`}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-full bg-neutral py-2 text-center text-[13px] font-medium text-on-neutral"
+              >
+                Clinician view ↗
+              </a>
+            </div>
 
             <button
               onClick={() => {

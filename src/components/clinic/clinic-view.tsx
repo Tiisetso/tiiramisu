@@ -168,6 +168,14 @@ export function ClinicView() {
                 <p className="mt-1 text-[13px] text-ash">
                   {current.p.weeksSinceTms} weeks after TMS · last check-in {agoLabel(current.lastCheckin).toLowerCase()}
                 </p>
+                <a
+                  href={`/?patient=${current.p.id}&day=${day}&demo=1`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-block text-[13px] font-medium text-stone underline-offset-4 hover:underline"
+                >
+                  See their app ↗
+                </a>
               </div>
               <span className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-hairline px-3 py-1 text-[13px] font-medium">
                 <span className={`size-2 rounded-full ${DOT[status(current).tone]}`} />
