@@ -69,6 +69,8 @@ jobs:
           path: ~/.npm
           key: e2e-npm-${{ hashFiles('package-lock.json') }}
       - run: npm ci
+      - name: Drop apt sources we don't allow (the image ships packages.microsoft.com; our policy blocks it)
+        run: sudo grep -l packages.microsoft.com /etc/apt/sources.list.d/* 2>/dev/null | xargs -r sudo rm -f
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - name: Synthetic patient lives through her drift
