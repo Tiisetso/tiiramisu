@@ -65,7 +65,7 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 | 3 | 1 | Demo persona + time slider | in review |
 | 4 | 1 | Voice check-in (on-device features) | in review |
 | 5 | 1 | `/api/analyze` (ElevenLabs STT → Claude) | in review |
-| 6 | 1 | Today screen | todo |
+| 6 | 1 | Today screen | in review |
 | 7 | 2 | Adaptive soundscape | todo |
 | 8 | 2 | Response loop + learning | todo |
 | 9 | 3 | Circle: friends + anonymous peers | todo |
