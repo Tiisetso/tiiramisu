@@ -35,7 +35,7 @@ const EXPECTED = {
   build: [/(^|\.)npmjs\.org$/, /(^|\.)github(usercontent)?\.com$/, /(^|\.)githubassets\.com$/, /(^|\.)actions\.githubusercontent\.com$/, /(^|\.)blob\.core\.windows\.net$/, /fonts\.(googleapis|gstatic)\.com$/],
   "synthetic-patient": [
     /(^|\.)npmjs\.org$/, /(^|\.)github(usercontent)?\.com$/, /(^|\.)githubassets\.com$/, /(^|\.)actions\.githubusercontent\.com$/, /(^|\.)blob\.core\.windows\.net$/,
-    /fonts\.(googleapis|gstatic)\.com$/, /(^|\.)ubuntu\.com$/, /playwright/, /(^|\.)azureedge\.net$/,
+    /fonts\.(googleapis|gstatic)\.com$/,
     /^api\.anthropic\.com$/, /^api\.elevenlabs\.io$/, /\.vercel\.app$/,
   ],
 };

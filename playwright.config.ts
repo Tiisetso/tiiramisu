@@ -24,7 +24,13 @@ export default defineConfig({
       args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
     },
   },
-  projects: [{ name: "phone", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 } }],
+  projects: [
+    {
+      name: "phone",
+      // CI uses the runner image's Google Chrome (PW_CHANNEL=chrome) instead of downloading a browser
+      use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, channel: process.env.PW_CHANNEL || undefined },
+    },
+  ],
   webServer: process.env.BASE_URL
     ? undefined
     : { command: "npx next start -p 3100", url: "http://localhost:3100", reuseExistingServer: !process.env.CI, timeout: 60_000 },

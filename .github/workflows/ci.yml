@@ -55,11 +55,8 @@ jobs:
           image: ubuntu-24.04
           network: |
             default: deny
-            presets: [npm, github, fonts, ubuntu]
+            presets: [npm, github, fonts]
             connections:
-              - tls:
-                  serverNamePatterns: [cdn.playwright.dev, playwright.download.prss.microsoft.com, playwright.azureedge.net]
-                  ports: [443]
               - tls:
                   serverNamePatterns: [api.anthropic.com, api.elevenlabs.io]
                   ports: [443]
@@ -69,13 +66,15 @@ jobs:
           path: ~/.npm
           key: e2e-npm-${{ hashFiles('package-lock.json') }}
       - run: npm ci
-      - name: Drop apt sources we don't allow (the image ships packages.microsoft.com; our policy blocks it)
-        run: sudo grep -l packages.microsoft.com /etc/apt/sources.list.d/* 2>/dev/null | xargs -r sudo rm -f
-      - run: npx playwright install --with-deps chromium
+      # No browser download: the CDN redirects to storage.googleapis.com (any GCS bucket), which we
+      # won't allow. The full Ubuntu image already ships Google Chrome, so test with that.
+      - name: Use the image's Google Chrome
+        run: google-chrome --version
       - run: npm run build
       - name: Synthetic patient lives through her drift
         run: npx playwright test
         env:
+          PW_CHANNEL: chrome
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           E2E_SKIP_AI: ${{ secrets.ANTHROPIC_API_KEY == '' && '1' || '' }}
