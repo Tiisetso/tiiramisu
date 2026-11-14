@@ -18,7 +18,10 @@ export default defineConfig({
     baseURL: BASE_URL,
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
-    video: "on",
+    // Video needs Playwright's own ffmpeg download (blocked by our CI network policy), so in CI we
+    // rely on the screenshots the tests attach at each key moment instead.
+    video: process.env.PW_CHANNEL ? "off" : "on",
+    screenshot: "on",
     trace: "retain-on-failure",
     launchOptions: {
       args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 /** Chromium flag that turns a WAV file into the microphone. */
 export const fakeMic = (file: string) => `--use-file-for-fake-audio-capture=${path.resolve("e2e/fixtures", file)}`;
@@ -32,4 +32,10 @@ export async function voiceCheckin(page: Page, seconds = 8) {
   await page.getByRole("button", { name: "I’m done" }).click();
   await expect(page.getByText("Thank you for checking in")).toBeVisible({ timeout: 30_000 });
   return Date.now() - t0;
+}
+
+/** Attach a named screenshot to the report: visible proof of each step in CI. */
+export async function snap(page: Page, name: string) {
+  await page.waitForTimeout(600); // let the fade-ins settle
+  await test.info().attach(name, { body: await page.screenshot(), contentType: "image/png" });
 }

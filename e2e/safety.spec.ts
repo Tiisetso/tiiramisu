@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { BANNED, begin } from "./helpers";
+import { BANNED, begin, snap } from "./helpers";
 
 /** Safety regressions: these must hold on every build. */
 
@@ -12,6 +12,7 @@ test("crisis phrases in chat open the support sheet", async ({ page }) => {
     await page.getByRole("button", { name: "Send", exact: true }).click();
     await expect(page.getByRole("dialog")).toContainText("You don’t have to hold this alone");
     await expect(page.getByRole("link", { name: /Call 112/ })).toBeVisible();
+    await snap(page, `crisis sheet: "${phrase}"`);
     await page.getByRole("dialog").getByRole("button", { name: "Close", exact: true }).click();
   }
 });

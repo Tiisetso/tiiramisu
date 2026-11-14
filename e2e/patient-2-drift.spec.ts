@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { BANNED, BASE_ARGS, begin, fakeMic, voiceCheckin } from "./helpers";
+import { BANNED, BASE_ARGS, begin, fakeMic, snap, voiceCheckin } from "./helpers";
 
 /**
  * Synthetic patient, part 2: she has drifted. The app should notice (passive signals),
@@ -20,12 +20,14 @@ test("day 58 → drift insight → tired voice is noticed → wave to Maya helps
   // passive signals → insight
   await expect(page.locator("h2").first()).toContainText("blending");
   await expect(page.getByText("Wave to Maya").first()).toBeVisible();
+  await snap(page, "3 · drifting: the app noticed");
   expect(await page.locator("main").innerText()).not.toMatch(BANNED);
 
   // voice check-in: on-device features vs her usual
   const ms = await voiceCheckin(page);
   test.info().annotations.push({ type: "time-to-analysis-ms", description: String(ms) });
   await expect(page.getByText(/quieter|slower|more pauses/)).toBeVisible();
+  await snap(page, "4 · tired voice heard on device");
 
   // respond → learn
   await page.getByRole("button", { name: "Back to today" }).click();
@@ -34,6 +36,7 @@ test("day 58 → drift insight → tired voice is noticed → wave to Maya helps
   await page.getByRole("button", { name: "Done" }).click();
   await page.getByRole("button", { name: "Yes, a bit" }).click();
   await expect(page.getByRole("dialog")).toContainText("has now helped you 4 of 4 times");
+  await snap(page, "5 · it helped: the app learned");
   await page.getByRole("button", { name: "Back to today" }).click();
   await expect(page.getByText(/Good (morning|afternoon|evening)/)).toBeVisible();
   expect(errors).toEqual([]);
