@@ -173,7 +173,8 @@ export function computeDayState(days: DayData[], day: number): DayState {
   const missedCheckins = recent.filter((d) => d.voice === null).length;
 
   const level: DriftLevel = driftScore >= 1.1 ? "drifting" : driftScore >= 0.6 ? "watch" : "steady";
-  const top = [...signals].filter((s) => s.z > 1).sort((a, b) => b.z - a.z);
+  // ties (z is capped) go to the signal with stronger evidence (higher weight)
+  const top = [...signals].filter((s) => s.z > 1).sort((a, b) => b.z - a.z || weights[b.key] - weights[a.key]);
 
   return { day, signals, driftScore, level, top, missedCheckins };
 }
