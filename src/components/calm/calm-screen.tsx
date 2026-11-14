@@ -7,6 +7,7 @@ import { useMood } from "@/components/mood-provider";
 import { Orb } from "@/components/orb";
 import { useSound } from "@/components/sound-provider";
 import { SCENES, type Scene } from "@/lib/sound/engine";
+import { useBreathPhase } from "@/lib/use-breath";
 
 const SCENE_LABEL: Record<Scene, string> = { forest: "Forest", rain: "Rain", sea: "Sea", night: "Night" };
 
@@ -17,22 +18,6 @@ const MOOD_LINE: Record<string, string> = {
   listening: "Soft and quiet, just listening.",
   night: "Deep and slow, for winding down.",
 };
-
-/** 4 s in · 6 s out, matching the orb's breath (DESIGN.md → Motion). */
-function useBreathPhase(active: boolean) {
-  const [phase, setPhase] = useState<"in" | "out">("in");
-  useEffect(() => {
-    if (!active) return;
-    let t: ReturnType<typeof setTimeout>;
-    const loop = (p: "in" | "out") => {
-      setPhase(p);
-      t = setTimeout(() => loop(p === "in" ? "out" : "in"), p === "in" ? 4000 : 6000);
-    };
-    t = setTimeout(() => loop("in"), 0);
-    return () => clearTimeout(t);
-  }, [active]);
-  return phase;
-}
 
 export function CalmScreen() {
   const { levelRef } = useDemo();

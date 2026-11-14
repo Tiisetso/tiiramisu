@@ -5,7 +5,12 @@ import { CrisisSheet } from "@/components/crisis-sheet";
 import { useDemo } from "@/components/demo-provider";
 import { Button, FadeRise } from "@/components/motion";
 import { Orb } from "@/components/orb";
+import { useLearning } from "@/components/learning-provider";
 import { useSound } from "@/components/sound-provider";
+import { ActivitySheet } from "@/components/today/activity-sheet";
+import { WhatHelps } from "@/components/today/what-helps";
+import type { Intervention } from "@/lib/analysis";
+import { explain } from "@/lib/learning";
 import { Sparkline } from "@/components/today/sparkline";
 import { greeting } from "@/lib/greeting";
 import { buildInsight, formatSignalValue, INTERVENTION_LABEL, splitItalic } from "@/lib/insight";
@@ -26,11 +31,14 @@ function Italic({ text }: { text: string }) {
 }
 
 /** Home (DESIGN.md: one idea per section, everything relative to your usual). */
-export function TodayScreen({ onCheckin }: { onCheckin: () => void }) {
+export function TodayScreen({ onCheckin, onOpenCalm }: { onCheckin: () => void; onOpenCalm: () => void }) {
   const { persona, days, day, today, state, checkin, levelRef } = useDemo();
   const hydrated = useHydrated();
   const [crisisOpen, setCrisisOpen] = useState(false);
   const sound = useSound();
+  const { ranked } = useLearning();
+  const [activity, setActivity] = useState<Intervention | null>(null);
+  const picks = ranked.slice(0, 3);
 
   const insight = buildInsight(state, checkin?.response.analysis.suggestion);
   const labels = days.slice(Math.max(0, day - 13), day + 1).map((d) => (d.day === day ? "Today" : WEEKDAYS[d.weekday].slice(0, 3)));
@@ -103,12 +111,19 @@ export function TodayScreen({ onCheckin }: { onCheckin: () => void }) {
           </h2>
           <p className="mt-3 text-base leading-relaxed">{insight.body}</p>
           <div className="mt-5 flex flex-wrap gap-2">
-            {insight.suggestions.map((s) => (
-              <span key={s} className="rounded-full border border-line bg-card px-4 py-2 text-sm font-medium">
-                {s === "message_friend" ? `Wave to ${persona.circle[0]}` : INTERVENTION_LABEL[s]}
-              </span>
+            {picks.map((r, i) => (
+              <button
+                key={r.intervention}
+                onClick={() => setActivity(r.intervention)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-transform active:scale-[0.97] ${
+                  i === 0 ? "bg-neutral text-on-neutral" : "border border-line bg-card"
+                }`}
+              >
+                {r.intervention === "message_friend" ? `Wave to ${persona.circle[0]}` : INTERVENTION_LABEL[r.intervention]}
+              </button>
             ))}
           </div>
+          <p className="mt-3 text-[13px] leading-snug text-fg-2">{explain(picks[0], persona.circle[0])}</p>
         </div>
       </FadeRise>
 
@@ -124,6 +139,10 @@ export function TodayScreen({ onCheckin }: { onCheckin: () => void }) {
           <p className="mt-2 font-serif text-[32px] font-light leading-none">{(avgSteps / 1000).toFixed(1)}k</p>
           <p className="mt-2 text-[13px] text-fg-2">steps a day on average</p>
         </div>
+      </FadeRise>
+
+      <FadeRise index={5} className="mt-4">
+        <WhatHelps />
       </FadeRise>
 
       {/* Signals */}
@@ -157,6 +176,7 @@ export function TodayScreen({ onCheckin }: { onCheckin: () => void }) {
         </p>
       </FadeRise>
 
+      <ActivitySheet intervention={activity} onClose={() => setActivity(null)} onOpenCalm={onOpenCalm} />
       <CrisisSheet open={crisisOpen} onClose={() => setCrisisOpen(false)} name={persona.name} contact={persona.circle[0]} />
     </main>
   );

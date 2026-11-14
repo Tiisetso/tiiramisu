@@ -7,6 +7,7 @@ import { CheckinScreen } from "@/components/checkin/checkin-screen";
 import { DemoControls } from "@/components/demo-controls";
 import { DemoProvider, useDemo } from "@/components/demo-provider";
 import { CalmScreen } from "@/components/calm/calm-screen";
+import { LearningProvider } from "@/components/learning-provider";
 import { LightField } from "@/components/light-field";
 import { FadeRise } from "@/components/motion";
 import { SoundProvider, useSound } from "@/components/sound-provider";
@@ -17,10 +18,12 @@ export default function Home() {
   return (
     <DemoProvider>
       <Field />
-      <SoundProvider>
-        <App />
-      </SoundProvider>
-      <DemoControls />
+      <LearningProvider>
+        <SoundProvider>
+          <App />
+        </SoundProvider>
+        <DemoControls />
+      </LearningProvider>
     </DemoProvider>
   );
 }
@@ -61,7 +64,7 @@ function App() {
         )}
         {screen === "today" && (
           <FadeRise key="today" className="flex flex-1">
-            <TodayScreen onCheckin={() => setScreen("checkin")} />
+            <TodayScreen onCheckin={() => setScreen("checkin")} onOpenCalm={() => setScreen("calm")} />
           </FadeRise>
         )}
         {screen === "calm" && (

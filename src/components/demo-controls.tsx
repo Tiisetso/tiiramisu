@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useDemo } from "@/components/demo-provider";
+import { useLearning } from "@/components/learning-provider";
 import { useMood } from "@/components/mood-provider";
 import { EASE_SOFT } from "@/components/motion";
 import { DAYS } from "@/lib/demo/persona";
@@ -24,6 +25,7 @@ export function DemoControls() {
   const [voiceReset, setVoiceReset] = useState(false);
   const { day, setDay, state, moodOverride } = useDemo();
   const { mood, setMood } = useMood();
+  const { fresh, setFresh } = useLearning();
   if (!enabled) return null;
 
   const chip = (active: boolean) =>
@@ -73,6 +75,16 @@ export function DemoControls() {
                 Top: {state.top.slice(0, 3).map((s) => `${s.label} (${s.z.toFixed(1)})`).join(", ")}
               </p>
             )}
+
+            <p className="eyebrow mt-4 text-fg-2">Learning</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <button onClick={() => setFresh(false)} className={chip(!fresh)}>
+                Aino&rsquo;s history
+              </button>
+              <button onClick={() => setFresh(true)} className={chip(fresh)}>
+                Fresh user
+              </button>
+            </div>
 
             <p className="eyebrow mt-4 text-fg-2">Light field</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
