@@ -32,6 +32,8 @@ create table if not exists outcomes (
   created_at timestamptz not null default now()
 );
 create index if not exists outcomes_patient_idx on outcomes (patient_id, created_at);
+alter table outcomes add column if not exists expected int;
+alter table outcomes add column if not exists actual int;
 
 create table if not exists messages (
   id text primary key,

@@ -12,30 +12,33 @@ export interface Outcome {
   intervention: Intervention;
   /** null = "not sure" (counted as neither) */
   helped: boolean | null;
+  /** "predict, then notice": how much they expected it to help, and how much it did (1–5) */
+  expected?: number | null;
+  actual?: number | null;
 }
 
 /** Aino's past answers: mostly around the day-32 wobble, which recovered. */
 export const SEED_HISTORY: Outcome[] = [
   { day: 9, intervention: "breathe", helped: false },
-  { day: 12, intervention: "walk", helped: true },
-  { day: 15, intervention: "light", helped: true },
+  { day: 12, intervention: "walk", helped: true, expected: 2, actual: 4 },
+  { day: 15, intervention: "light", helped: true, expected: 2, actual: 3 },
   { day: 17, intervention: "soundscape", helped: true },
-  { day: 19, intervention: "walk", helped: true },
-  { day: 21, intervention: "message_friend", helped: true },
+  { day: 19, intervention: "walk", helped: true, expected: 2, actual: 3 },
+  { day: 21, intervention: "message_friend", helped: true, expected: 2, actual: 4 },
   { day: 24, intervention: "breathe", helped: true },
   { day: 26, intervention: "walk", helped: false },
   { day: 29, intervention: "soundscape", helped: false },
   { day: 31, intervention: "rest", helped: true },
   { day: 32, intervention: "light", helped: true },
-  { day: 33, intervention: "walk", helped: true },
+  { day: 33, intervention: "walk", helped: true, expected: 1, actual: 4 },
   { day: 33, intervention: "breathe", helped: false },
   { day: 34, intervention: "light", helped: false },
-  { day: 35, intervention: "message_friend", helped: true },
+  { day: 35, intervention: "message_friend", helped: true, expected: 1, actual: 4 },
   { day: 36, intervention: "rest", helped: false },
   { day: 38, intervention: "breathe", helped: true },
   { day: 40, intervention: "soundscape", helped: true },
-  { day: 41, intervention: "walk", helped: true },
-  { day: 44, intervention: "light", helped: true },
+  { day: 41, intervention: "walk", helped: true, expected: 2, actual: 4 },
+  { day: 44, intervention: "light", helped: true, expected: 3, actual: 3 },
   { day: 46, intervention: "message_friend", helped: true },
 ];
 
@@ -116,8 +119,25 @@ const BECAUSE: Record<SignalKey, string> = {
 
 export const interventionName = (i: Intervention, friend = "Maya") => (NAME[i] ?? "That").replace("Maya", friend);
 
+/** Average "how it was" minus "what I expected" per intervention (only pairs with both). */
+export function pleasureGaps(history: Outcome[], upToDay: number) {
+  const acc = new Map<Intervention, { sum: number; n: number }>();
+  for (const o of history) {
+    if (o.day > upToDay || o.expected == null || o.actual == null) continue;
+    const a = acc.get(o.intervention) ?? { sum: 0, n: 0 };
+    a.sum += o.actual - o.expected;
+    a.n++;
+    acc.set(o.intervention, a);
+  }
+  return [...acc].map(([intervention, a]) => ({ intervention, gap: a.sum / a.n, n: a.n })).sort((x, y) => y.gap - x.gap);
+}
+
 /** "Walks have" / "Breathing has" */
 export const hasHave = (i: Intervention) => (i === "walk" || i === "soundscape" ? "have" : "has");
+const plural = (i: Intervention) => i === "walk" || i === "soundscape";
+/** "Walks usually feel better than you expect." */
+export const gapLine = (i: Intervention, friend = "Maya") =>
+  `${interventionName(i, friend)} usually ${plural(i) ? "feel" : "feels"} better than you expect.`;
 
 /** One-line "why this?" in the DESIGN.md voice. */
 export function explain(r: Ranked, friend = "Maya"): string {

@@ -3,14 +3,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useDemo } from "@/components/demo-provider";
 import type { Intervention } from "@/lib/analysis";
-import { rank, SEED_HISTORY, tally, type Outcome, type Ranked, type Tally } from "@/lib/learning";
+import { pleasureGaps, rank, SEED_HISTORY, tally, type Outcome, type Ranked, type Tally } from "@/lib/learning";
 import { liveGet, livePost, useLive } from "@/lib/live";
 
 interface LearningContextValue {
   history: Outcome[];
   ranked: Ranked[];
   tallies: Record<Intervention, Tally>;
-  record: (intervention: Intervention, helped: boolean | null) => void;
+  record: (intervention: Intervention, helped: boolean | null, expected?: number | null, actual?: number | null) => void;
+  /** where things felt better than expected (predict, then notice) */
+  gaps: ReturnType<typeof pleasureGaps>;
   /** demo: compare with someone the app knows nothing about */
   fresh: boolean;
   setFresh: (f: boolean) => void;
@@ -41,10 +43,11 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
   const ranked = useMemo(() => rank(history, state, checkin?.response.analysis.suggestion), [history, state, checkin]);
   const tallies = useMemo(() => tally(history, day), [history, day]);
 
-  const record = useCallback((intervention: Intervention, helped: boolean | null) => {
-    setAdded((a) => [...a, { day, intervention, helped }]);
-    void livePost("/api/outcomes", { patientId: patient.id, day, intervention, helped });
+  const record = useCallback((intervention: Intervention, helped: boolean | null, expected: number | null = null, actual: number | null = null) => {
+    setAdded((a) => [...a, { day, intervention, helped, expected, actual }]);
+    void livePost("/api/outcomes", { patientId: patient.id, day, intervention, helped, expected, actual });
   }, [day, patient.id]);
+  const gaps = useMemo(() => pleasureGaps(history, day), [history, day]);
 
   const setFreshAndReset = useCallback((f: boolean) => {
     setFresh(f);
@@ -52,8 +55,8 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ history, ranked, tallies, record, fresh, setFresh: setFreshAndReset }),
-    [history, ranked, tallies, record, fresh, setFreshAndReset],
+    () => ({ history, ranked, tallies, record, gaps, fresh, setFresh: setFreshAndReset }),
+    [history, ranked, tallies, record, gaps, fresh, setFreshAndReset],
   );
   return <LearningContext.Provider value={value}>{children}</LearningContext.Provider>;
 }
