@@ -6,10 +6,9 @@ import { useChat } from "@/components/chat-provider";
 import { useDemo } from "@/components/demo-provider";
 import { useLearning } from "@/components/learning-provider";
 import { Button, EASE_SOFT } from "@/components/motion";
-import { Orb } from "@/components/orb";
 import type { Intervention } from "@/lib/analysis";
 import { interventionName } from "@/lib/learning";
-import { useBreathPhase } from "@/lib/use-breath";
+import { BreathingGuide } from "@/components/breathing-guide";
 
 type Step = "do" | "ask" | "thanks";
 
@@ -50,14 +49,13 @@ export function ActivitySheet({
   onClose: () => void;
   onOpenCalm: () => void;
 }) {
-  const { persona, setActivityMood, levelRef } = useDemo();
+  const { persona, setActivityMood } = useDemo();
   const { record, tallies } = useLearning();
   const chat = useChat();
   const friend = persona.circle[0];
   const [step, setStep] = useState<Step>("do");
   const [sentAt, setSentAt] = useState<number | null>(null);
   const [answer, setAnswer] = useState<boolean | null>(null);
-  const phase = useBreathPhase(intervention === "breathe" && step === "do");
 
   // reset when a new step is opened
   const [openFor, setOpenFor] = useState<Intervention | null>(null);
@@ -184,11 +182,8 @@ export function ActivitySheet({
                 <h2 className="font-serif text-[28px] font-light leading-tight">{COPY[intervention as keyof typeof COPY].title}</h2>
                 <p className="mt-3 text-base text-fg-2">{COPY[intervention as keyof typeof COPY].body}</p>
                 {intervention === "breathe" && (
-                  <div className="my-6 flex flex-col items-center">
-                    <Orb levelRef={levelRef} state="idle" size={140} />
-                    <p className="mt-5 font-serif text-[22px] font-light" aria-live="polite">
-                      {phase === "in" ? "Breathe in…" : "and slowly out"}
-                    </p>
+                  <div className="my-6">
+                    <BreathingGuide active={step === "do"} size={170} rounds={3} />
                   </div>
                 )}
                 <div className="mt-8 flex flex-col gap-3">

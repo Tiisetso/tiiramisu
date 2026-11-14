@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useDemo } from "@/components/demo-provider";
 import { FadeRise } from "@/components/motion";
 import { useMood } from "@/components/mood-provider";
-import { Orb } from "@/components/orb";
 import { useSound } from "@/components/sound-provider";
 import { SCENES, type Scene } from "@/lib/sound/engine";
-import { useBreathPhase } from "@/lib/use-breath";
+import { BreathingGuide } from "@/components/breathing-guide";
 
 const SCENE_LABEL: Record<Scene, string> = { forest: "Forest", rain: "Rain", sea: "Sea", night: "Night" };
 
@@ -20,11 +18,9 @@ const MOOD_LINE: Record<string, string> = {
 };
 
 export function CalmScreen() {
-  const { levelRef } = useDemo();
   const { mood } = useMood();
   const sound = useSound();
   const [breathing, setBreathing] = useState(false);
-  const phase = useBreathPhase(breathing);
 
   // A touch louder while you're here
   const { setLevel } = sound;
@@ -57,13 +53,7 @@ export function CalmScreen() {
       </FadeRise>
 
       <FadeRise index={2} className="my-10 flex flex-col items-center">
-        <button onClick={() => setBreathing((b) => !b)} aria-label={breathing ? "Stop breathing guide" : "Start breathing guide"}>
-          <Orb levelRef={levelRef} state="idle" size={200} />
-        </button>
-        <p className="mt-8 font-serif text-[24px] font-light" aria-live="polite">
-          {breathing ? (phase === "in" ? "Breathe in…" : "and slowly out") : "Tap the light to breathe together"}
-        </p>
-        {breathing && <p className="mt-2 text-[13px] text-fg-2">In for 4, out for 6. Stop whenever you like.</p>}
+        <BreathingGuide active={breathing} onToggle={() => setBreathing((b) => !b)} size={240} />
       </FadeRise>
 
       <FadeRise index={3}>
