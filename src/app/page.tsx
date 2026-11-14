@@ -6,8 +6,10 @@ import { BeginScreen } from "@/components/begin-screen";
 import { CheckinScreen } from "@/components/checkin/checkin-screen";
 import { DemoControls } from "@/components/demo-controls";
 import { DemoProvider, useDemo } from "@/components/demo-provider";
+import { CalmScreen } from "@/components/calm/calm-screen";
 import { LightField } from "@/components/light-field";
 import { FadeRise } from "@/components/motion";
+import { SoundProvider, useSound } from "@/components/sound-provider";
 import { TabBar, type Tab } from "@/components/tab-bar";
 import { TodayScreen } from "@/components/today/today-screen";
 
@@ -15,7 +17,9 @@ export default function Home() {
   return (
     <DemoProvider>
       <Field />
-      <App />
+      <SoundProvider>
+        <App />
+      </SoundProvider>
       <DemoControls />
     </DemoProvider>
   );
@@ -31,11 +35,18 @@ type Screen = "begin" | Tab;
 function App() {
   const [screen, setScreen] = useState<Screen>("begin");
   const { persona } = useDemo();
+  const sound = useSound();
 
   if (screen === "begin") {
     return (
       <FadeRise key="begin" className="flex flex-1 flex-col">
-        <BeginScreen name={persona.name} onBegin={() => setScreen("today")} />
+        <BeginScreen
+          name={persona.name}
+          onBegin={() => {
+            void sound.start(); // the tap is the gesture that unlocks audio (iOS)
+            setScreen("today");
+          }}
+        />
       </FadeRise>
     );
   }
@@ -53,9 +64,14 @@ function App() {
             <TodayScreen onCheckin={() => setScreen("checkin")} />
           </FadeRise>
         )}
-        {(screen === "circle" || screen === "calm") && (
-          <FadeRise key={screen} className="flex flex-1">
-            <Placeholder tab={screen} />
+        {screen === "calm" && (
+          <FadeRise key="calm" className="flex flex-1">
+            <CalmScreen />
+          </FadeRise>
+        )}
+        {screen === "circle" && (
+          <FadeRise key="circle" className="flex flex-1">
+            <Placeholder />
           </FadeRise>
         )}
       </AnimatePresence>
@@ -64,12 +80,9 @@ function App() {
   );
 }
 
-/** Until Circle (#9) and Calm (#7) land. */
-function Placeholder({ tab }: { tab: "circle" | "calm" }) {
-  const copy =
-    tab === "circle"
-      ? { eyebrow: "Circle", title: "The people who've got you.", body: "Friends and peers who've been through TMS, a wave away." }
-      : { eyebrow: "Calm", title: "Sound and light for right now.", body: "A soundscape that follows how you're doing today." };
+/** Until Circle (#9) lands. */
+function Placeholder() {
+  const copy = { eyebrow: "Circle", title: "The people who've got you.", body: "Friends and peers who've been through TMS, a wave away." };
   return (
     <main className="mx-auto flex w-full max-w-[560px] flex-col justify-center px-5 pb-32 text-center">
       <p className="eyebrow text-fg-2">{copy.eyebrow}</p>

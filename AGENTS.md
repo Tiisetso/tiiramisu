@@ -66,7 +66,7 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 | 4 | 1 | Voice check-in (on-device features) | in review |
 | 5 | 1 | `/api/analyze` (ElevenLabs STT → Claude) | in review |
 | 6 | 1 | Today screen | in review |
-| 7 | 2 | Adaptive soundscape | todo |
+| 7 | 2 | Adaptive soundscape | in review |
 | 8 | 2 | Response loop + learning | todo |
 | 9 | 3 | Circle: friends + anonymous peers | todo |
 | 10 | 3 | Apple Shortcut ingest | todo |
@@ -86,3 +86,4 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 - **`/api/analyze`:** ElevenLabs Scribe (v2, falls back to v1, audio-event tags) → `claude-opus-5-5` structured output (Zod, effort `low`, server-side refusal fallbacks). ~4–6 s. Never fails the demo: canned per-drift-level response with `source: "fallback"`. `risk_flag: "reach_out"` must open the crisis sheet.
 - **Voice check-in:** features computed on device (`src/lib/voice/`): RMS + autocorrelation pitch per frame → speaking rate, pause ratio, pitch variability, loudness. The **first check-in on a device becomes "your usual voice"** (localStorage); later ones are compared to it. Demo: reset the baseline in the ◐ drawer, record normally on day 44, then tired on day 58. Sample buttons (`?demo=1`) send canned transcripts; no real sample audio yet.
 - **Crisis sheet:** 112, MIELI Crisis Helpline 09 2525 0111 (Finnish, 24/7), MIELI English chat (English phone line closed 2026). Verify before the demo.
+- **Soundscape (`src/lib/sound/engine.ts`):** Tone.js pads + sparse bells per mood (chords, tempo, filter) over ElevenLabs Sound Effects loops in `public/audio/` (generated once by `scripts/generate-ambience.mts`, levelled in code). calm → forest, low → rain, bright → sea, night → night. Starts on the Begin tap; ducks to silence while the mic records.

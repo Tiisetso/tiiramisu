@@ -6,6 +6,7 @@ import { CrisisSheet } from "@/components/crisis-sheet";
 import { useDemo, type CheckinResult } from "@/components/demo-provider";
 import { Button, FadeRise } from "@/components/motion";
 import { Orb } from "@/components/orb";
+import { useSound } from "@/components/sound-provider";
 import type { AnalyzeContext, AnalyzeResponse, VoiceDeltas } from "@/lib/analysis";
 import { loadVoiceBaseline, saveVoiceBaseline, voiceDeltas, voicePhrase } from "@/lib/voice/baseline";
 import { MAX_SECONDS, useVoiceRecorder, type Recording } from "@/lib/voice/recorder";
@@ -42,6 +43,7 @@ export function CheckinScreen({ onDone }: { onDone: () => void }) {
   const { persona, day, today, state, levelRef, setActivityMood, setCheckin, checkin } = useDemo();
   const demo = useDemoMode();
   const recorder = useVoiceRecorder(levelRef);
+  const { duck } = useSound();
   const [phase, setPhase] = useState<Phase>(checkin ? "result" : "intro");
   const [result, setResult] = useState<CheckinResult | null>(checkin);
   const [crisisOpen, setCrisisOpen] = useState(false);
@@ -52,7 +54,13 @@ export function CheckinScreen({ onDone }: { onDone: () => void }) {
   const prompt = PROMPTS[day % PROMPTS.length];
 
   // Leaving the screen: stop the mic and give the light field back
-  useEffect(() => () => setActivityMood(null), [setActivityMood]);
+  useEffect(
+    () => () => {
+      setActivityMood(null);
+      duck(false);
+    },
+    [setActivityMood, duck],
+  );
 
   const context = (voice: CheckinResult["voice"], mood: number | null): AnalyzeContext => ({
     name: persona.name,
@@ -97,8 +105,10 @@ export function CheckinScreen({ onDone }: { onDone: () => void }) {
     setNote(null);
     setActivityMood("listening");
     setPhase("recording");
+    duck(true); // keep the soundscape out of the mic
     const status = await recorder.start();
     if (status === "denied" || status === "unsupported") {
+      duck(false);
       // gentle typed path instead
       setActivityMood(null);
       setNote(
@@ -112,6 +122,7 @@ export function CheckinScreen({ onDone }: { onDone: () => void }) {
 
   async function finishRecording() {
     const rec = await recorder.stop();
+    duck(false);
     if (!rec) return;
     if (rec.duration < 2) {
       setActivityMood(null);
