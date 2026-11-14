@@ -4,9 +4,9 @@ import { withDb } from "@/lib/server/db";
 export async function GET() {
   return withDb(async (db) => {
     const r = await db.query(
-      "select patient_id, action, created_at from clinic_actions where created_at > now() - interval '24 hours' order by created_at",
+      "select patient_id, action, detail, created_at from clinic_actions where created_at > now() - interval '24 hours' order by created_at",
     );
-    return Response.json({ db: true, actions: r.rows.map((x) => ({ patientId: x.patient_id, action: x.action, at: x.created_at })) });
+    return Response.json({ db: true, actions: r.rows.map((x) => ({ patientId: x.patient_id, action: x.action, detail: x.detail, at: x.created_at })) });
   });
 }
 

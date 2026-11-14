@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import { useDemo } from "@/components/demo-provider";
 import { setConsent, useConsent, type Consent } from "@/lib/consent";
+import { disablePush, enablePush, PUSH_MESSAGE } from "@/lib/push";
 
 function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
@@ -28,14 +31,39 @@ export function ConsentRow({
   note?: string;
 }) {
   const c = useConsent();
+  const { patient } = useDemo();
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const change = async (v: boolean) => {
+    if (k !== "reminders") return setConsent({ [k]: v });
+    // Reminders = real push: ask the phone inside this tap (iOS requires it)
+    if (!v) {
+      setConsent({ reminders: false });
+      setMsg(null);
+      void disablePush();
+      return;
+    }
+    setConsent({ reminders: true });
+    const result = await enablePush(patient.id);
+    if (result !== "on") {
+      setConsent({ reminders: false });
+      setMsg(PUSH_MESSAGE[result]);
+    } else setMsg("On. You'll only ever see one calm notification at a time.");
+  };
+
   return (
     <div className="flex items-start gap-4 py-4">
       <div className="min-w-0 flex-1">
         <p className="text-[15px] font-medium">{title}</p>
         <p className="mt-1 text-[13px] leading-relaxed text-fg-2">{body}</p>
         {note && c[k] && <p className="mt-1 text-[12px] text-fg-2">{note}</p>}
+        {msg && (
+          <p className="mt-2 text-[12px] leading-relaxed text-fg" role="status">
+            {msg}
+          </p>
+        )}
       </div>
-      <Switch on={c[k]} onChange={(v) => setConsent({ [k]: v })} label={title} />
+      <Switch on={c[k]} onChange={(v) => void change(v)} label={title} />
     </div>
   );
 }

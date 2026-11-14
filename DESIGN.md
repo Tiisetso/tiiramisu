@@ -365,6 +365,16 @@ Motion should feel like breathing: slow, continuous, never sudden.
 
 The soundscape and the light field share one `mood` state, so they always agree. Audio starts only after the Begin tap. A volume/mute control is always reachable. Fades are ≥ 2 s, and there are no sudden sounds or notification pings inside the app.
 
+## Notifications
+
+Notifications reach people who may already feel overwhelmed, so they are rare and quiet.
+
+- **Never a number.** No app-icon badge counts, ever; any badge is cleared when the app opens.
+- **Never a pile.** One notification per kind (`tag` replaces the previous one, no re-alert), so there is only ever one waiting.
+- **Never guilt.** No "you missed…", no streaks, no urgency language. Lock-screen text never shows message content or health information ("Maya sent you a message", not what she wrote).
+- **Quiet hours.** 22:00–08:00 hold anything non-urgent. Only clinic outreach may arrive then.
+- **Opt-in, inside a tap.** Asked from the "Gentle reminders" switch, never on load; easy to turn off.
+
 ## Elevation & Depth
 
 | Level | Treatment | Use |

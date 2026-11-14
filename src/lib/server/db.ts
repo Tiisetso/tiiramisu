@@ -65,6 +65,14 @@ create table if not exists clinic_actions (
   action text not null,
   created_at timestamptz not null default now()
 );
+alter table clinic_actions add column if not exists detail text;
+
+create table if not exists push_subscriptions (
+  endpoint text primary key,
+  patient_id text not null,
+  subscription jsonb not null,
+  created_at timestamptz not null default now()
+);
 `;
 
 const g = globalThis as unknown as { __tiiPool?: Pool; __tiiSchema?: Promise<void> };
