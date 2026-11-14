@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useMood } from "@/components/mood-provider";
+import { onFieldEvent, readAfterglow } from "@/lib/field-events";
 import { useMediaQuery } from "@/lib/use-client";
 import { FIELD_STYLES, NIGHT_STYLES, type FieldStyle, type RGB } from "@/lib/mood";
 
@@ -28,6 +29,10 @@ uniform vec3 u_c0;
 uniform vec3 u_c1;
 uniform vec3 u_c2;
 uniform vec3 u_c3;
+uniform vec2 u_bpos;   // bloom origin (0..1, y up)
+uniform float u_bt;    // seconds since the bloom began
+uniform float u_bamp;  // bloom strength (0 = none)
+uniform float u_glow;  // today's afterglow (0..~0.55)
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
@@ -82,6 +87,21 @@ void main() {
   float m = smoothstep(0.22, 1.15, w);
   vec3 col = mix(u_c0, blobCol, m * 0.85);
   col *= u_bright;
+
+  // afterglow: each small step today leaves the room a little lighter and warmer
+  col = mix(col, col * vec3(1.05, 1.035, 1.0) + vec3(0.035, 0.025, 0.005), u_glow);
+
+  // bloom: a warm ripple from where the action happened, fading over ~4 s
+  if (u_bamp > 0.0) {
+    vec2 bp = vec2(u_bpos.x * aspect, u_bpos.y);
+    float d = length(p - bp);
+    float r = 0.06 + u_bt * 0.32;
+    float ring = exp(-pow((d - r) / (0.09 + u_bt * 0.07), 2.0));
+    float core = exp(-(d * d) / (0.03 + u_bt * 0.09));
+    float env = u_bamp * exp(-u_bt * 0.85) * smoothstep(0.0, 0.25, u_bt);
+    vec3 gold = vec3(0.99, 0.87, 0.60);
+    col = mix(col, gold, clamp((0.6 * core + 0.4 * ring) * env, 0.0, 0.8));
+  }
 
   // fine grain to avoid banding
   col += (hash(gl_FragCoord.xy + fract(t * 7.0)) - 0.5) * 0.022;
@@ -167,6 +187,7 @@ export function LightField({
 
     const u = (n: string) => gl.getUniformLocation(prog, n);
     const uRes = u("u_res"), uTime = u("u_time"), uLevel = u("u_level"), uBright = u("u_bright");
+    const uBpos = u("u_bpos"), uBt = u("u_bt"), uBamp = u("u_bamp"), uGlow = u("u_glow");
     const uC = [u("u_c0"), u("u_c1"), u("u_c2"), u("u_c3")];
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -177,7 +198,22 @@ export function LightField({
       speed: targetRef.current.speed,
       bright: targetRef.current.brightness,
       level: 0,
+      glow: readAfterglow(),
+      glowTarget: readAfterglow(),
+      burst: { x: 0.5, y: 0.5, t: 99, amp: 0 },
+      quicken: 0, // brief speed-up after a bloom
+      softenUntil: 0,
     };
+
+    const off = onFieldEvent((e) => {
+      if (e.kind === "bloom") {
+        cur.burst = { x: e.x, y: e.y, t: 0, amp: e.amp };
+        cur.quicken = 1.2 * e.amp;
+        cur.glowTarget = readAfterglow();
+      } else {
+        cur.softenUntil = performance.now() + 3500; // a slight, brief slowing; nothing darker
+      }
+    });
 
     const resize = () => {
       const w = Math.max(1, Math.round(canvas.clientWidth * RESOLUTION_SCALE));
@@ -215,17 +251,25 @@ export function LightField({
       for (let i = 0; i < 4; i++)
         for (let j = 0; j < 3; j++) cur.palette[i][j] += (tgt.palette[i][j] - cur.palette[i][j]) * k;
       cur.speed += (tgt.speed - cur.speed) * k;
+      cur.glow += (cur.glowTarget - cur.glow) * Math.min(1, dt * 0.8);
+      cur.burst.t += dt;
+      cur.quicken *= Math.exp(-dt * 0.9);
+      const softening = now < cur.softenUntil ? 0.82 : 1;
       cur.bright += (tgt.brightness - cur.bright) * k;
       const lvl = levelRef?.current ?? 0;
       cur.level += (lvl - cur.level) * Math.min(1, dt * 6);
 
       const motionScale = reduced.matches ? 0 : 1;
-      time += dt * cur.speed * motionScale;
+      time += dt * cur.speed * (1 + cur.quicken) * softening * motionScale;
 
       gl.uniform2f(uRes, canvas.width, canvas.height);
       gl.uniform1f(uTime, time);
       gl.uniform1f(uLevel, cur.level * motionScale);
       gl.uniform1f(uBright, cur.bright);
+      gl.uniform2f(uBpos, cur.burst.x, cur.burst.y);
+      gl.uniform1f(uBt, cur.burst.t);
+      gl.uniform1f(uBamp, reduced.matches ? 0 : cur.burst.amp);
+      gl.uniform1f(uGlow, cur.glow);
       for (let i = 0; i < 4; i++) gl.uniform3fv(uC[i], cur.palette[i]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
@@ -234,6 +278,7 @@ export function LightField({
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      off();
     };
   }, [levelRef, webgl]);
 

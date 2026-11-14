@@ -7,6 +7,7 @@ import { Thread } from "@/components/circle/thread";
 import { FadeRise } from "@/components/motion";
 import { FRIEND_ROOMS, PEOPLE, type RoomId } from "@/lib/chat";
 import { setConsent, useConsent } from "@/lib/consent";
+import { bloom } from "@/lib/field-events";
 
 /** Circle: real friends (soft status only) + anonymous TMS peers. */
 export function CircleScreen({ onThreadOpen }: { onThreadOpen?: (open: boolean) => void }) {
@@ -41,6 +42,7 @@ export function CircleScreen({ onThreadOpen }: { onThreadOpen?: (open: boolean) 
 
   const last = (room: RoomId) => messages.filter((m) => m.room === room).at(-1);
   const wave = (room: RoomId) => {
+    bloom("small");
     send(room, "👋 Just a wave", "wave");
     setWaved((w) => new Set(w).add(room));
   };

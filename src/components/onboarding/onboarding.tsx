@@ -9,6 +9,7 @@ import { ConsentControls, ConsentRow } from "@/components/onboarding/consent-con
 import { PEOPLE, type PersonId } from "@/lib/chat";
 import { setConsent, useConsent } from "@/lib/consent";
 import { useDemoMode } from "@/lib/use-client";
+import { bloom } from "@/lib/field-events";
 
 const STEPS = 3;
 
@@ -39,6 +40,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0);
 
   const finish = () => {
+    bloom("medium");
     setConsent({ onboarded: true });
     onDone();
   };

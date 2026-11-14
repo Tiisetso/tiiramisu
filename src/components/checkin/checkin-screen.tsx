@@ -13,6 +13,7 @@ import { MAX_SECONDS, useVoiceRecorder, type Recording } from "@/lib/voice/recor
 import { useDemoMode } from "@/lib/use-client";
 import { livePost } from "@/lib/live";
 import { getConsent, useConsent } from "@/lib/consent";
+import { bloom } from "@/lib/field-events";
 
 type Phase = "intro" | "recording" | "thinking" | "result" | "typed";
 
@@ -113,6 +114,7 @@ export function CheckinScreen({ onDone }: { onDone: () => void }) {
     });
     setActivityMood(response.analysis.tone.valence === "positive" ? "bright" : null);
     setPhase("result");
+    bloom("medium"); // showing up is the win, whatever it says
     if (response.analysis.risk_flag === "reach_out") setCrisisOpen(true);
   }
 
@@ -254,7 +256,7 @@ export function CheckinScreen({ onDone }: { onDone: () => void }) {
                   role="radio"
                   aria-checked={typedMood === m}
                   aria-label={["Very low", "Low", "Okay", "Good", "Very good"][m - 1]}
-                  onClick={() => setTypedMood(m)}
+                  onClick={(e) => { setTypedMood(m); bloom("small", e.currentTarget); }}
                   className={`size-13 rounded-full transition-transform ${typedMood === m ? "scale-110 ring-2 ring-action ring-offset-2 ring-offset-bg" : ""}`}
                   style={{ background: ["#b98f84", "#d2a98c", "#e3c39a", "#e4c27e", "#ddaa61"][m - 1] }}
                 />

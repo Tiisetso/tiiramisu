@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useDemo } from "@/components/demo-provider";
 import { FadeRise } from "@/components/motion";
 import { liveGet, livePost, useLive } from "@/lib/live";
+import { bloom } from "@/lib/field-events";
 
 interface Outreach {
   request: { at: string } | null;
@@ -46,6 +47,7 @@ export function OutreachCard() {
   }, [live, patient.id]);
 
   const respond = (choice: string) => {
+    if (choice !== "Not now") bloom("medium");
     setAnswered(choice);
     void livePost("/api/outreach", { patientId: patient.id, response: choice });
   };

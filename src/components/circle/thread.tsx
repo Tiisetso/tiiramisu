@@ -8,6 +8,7 @@ import { CrisisSheet } from "@/components/crisis-sheet";
 import { EASE_SOFT } from "@/components/motion";
 import { AINO_PSEUDONYM, CRISIS_PATTERN, PEOPLE, timeLabel, type RoomId } from "@/lib/chat";
 import { useHydrated } from "@/lib/use-client";
+import { bloom } from "@/lib/field-events";
 
 const PRESETS: Record<"friend" | "peers", string[]> = {
   friend: ["👋 Just a wave", "Thinking of you", "Fancy a short walk?", "Rough day, can't talk, just wanted you to know"],
@@ -47,6 +48,7 @@ export function Thread({
     const clean = t.trim();
     if (!clean) return;
     send(room, clean, kind);
+    if (!CRISIS_PATTERN.test(clean)) bloom("small"); // reaching out counts
     setText("");
     // not safe? offer support first, gently
     if (CRISIS_PATTERN.test(clean)) setCrisisOpen(true);
