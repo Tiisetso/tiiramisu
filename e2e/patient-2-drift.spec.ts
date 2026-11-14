@@ -35,7 +35,7 @@ test("day 58 → drift insight → tired voice is noticed → wave to Maya helps
   await page.getByRole("button", { name: "Thinking of you" }).click();
   await page.getByRole("button", { name: "Done" }).click();
   await page.getByRole("button", { name: "Yes, a bit" }).click();
-  await expect(page.getByRole("dialog")).toContainText("has now helped you 4 of 4 times");
+  await expect(page.getByRole("dialog")).toContainText("helped you 4 of 4 times");
   await snap(page, "5 · it helped: the app learned");
   await page.getByRole("button", { name: "Back to today" }).click();
   await expect(page.getByText(/Good (morning|afternoon|evening)/)).toBeVisible();

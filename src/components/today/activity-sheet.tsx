@@ -7,8 +7,9 @@ import { useDemo } from "@/components/demo-provider";
 import { useLearning } from "@/components/learning-provider";
 import { Button, EASE_SOFT } from "@/components/motion";
 import type { Intervention } from "@/lib/analysis";
-import { interventionName } from "@/lib/learning";
+import { hasHave, interventionName } from "@/lib/learning";
 import { BreathingGuide } from "@/components/breathing-guide";
+import { bloom, soften } from "@/lib/field-events";
 
 type Step = "do" | "ask" | "thanks";
 
@@ -67,7 +68,10 @@ export function ActivitySheet({
   }
 
 
-  const finish = (helped: boolean | null) => {
+  const finish = (helped: boolean | null, el?: Element) => {
+    if (helped === true) bloom("big"); // in the open space above the sheet, where it can be seen
+    else if (helped === null) bloom("small", el);
+    else soften();
     if (!intervention) return;
     record(intervention, helped);
     setAnswer(helped);
@@ -85,14 +89,14 @@ export function ActivitySheet({
     !intervention || answer === null
       ? "Thanks for telling me."
       : answer
-        ? `Noted. ${interventionName(intervention, friend)} has now helped you ${t?.helped} of ${t?.tried} times.`
+        ? `Noted. ${interventionName(intervention, friend)} ${hasHave(intervention)} now helped you ${t?.helped} of ${t?.tried} times.`
         : "Thanks for being honest. I'll suggest something different next time.";
 
   return (
     <AnimatePresence>
       {intervention && (
         <motion.div className="fixed inset-0 z-40 flex items-end justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <button aria-label="Close" className="absolute inset-0 bg-ink/30" onClick={onClose} />
+          <button aria-label="Close" className="absolute inset-0 bg-ink/15" onClick={onClose} />
           <motion.div
             role="dialog"
             aria-modal="true"
@@ -116,6 +120,7 @@ export function ActivitySheet({
                         onClick={() => {
                           setSentAt(Date.now() - 1);
                           chat.send("maya", m);
+                          bloom("small");
                         }}
                         className="rounded-full border border-line bg-card px-5 py-3 text-left text-base"
                       >
@@ -147,7 +152,7 @@ export function ActivitySheet({
                   </div>
                 )}
                 <div className="mt-8 flex flex-col gap-3">
-                  <Button onClick={() => setStep("ask")} disabled={sentAt === null}>
+                  <Button onClick={(e) => { bloom("medium", e.currentTarget); setStep("ask"); }} disabled={sentAt === null}>
                     Done
                   </Button>
                   <Button variant="ghost" onClick={onClose}>
@@ -187,7 +192,7 @@ export function ActivitySheet({
                   </div>
                 )}
                 <div className="mt-8 flex flex-col gap-3">
-                  <Button onClick={() => setStep("ask")}>{COPY[intervention as keyof typeof COPY].done}</Button>
+                  <Button onClick={(e) => { bloom("medium", e.currentTarget); setStep("ask"); }}>{COPY[intervention as keyof typeof COPY].done}</Button>
                   <Button variant="ghost" onClick={onClose}>
                     Not today
                   </Button>
@@ -200,11 +205,11 @@ export function ActivitySheet({
                 <h2 className="font-serif text-[28px] font-light leading-tight">Did that help, even a little?</h2>
                 <p className="mt-3 text-base text-fg-2">Your answer helps me learn what works for you.</p>
                 <div className="mt-8 flex flex-col gap-3">
-                  <Button onClick={() => finish(true)}>Yes, a bit</Button>
+                  <Button onClick={(e) => finish(true, e.currentTarget)}>Yes, a bit</Button>
                   <Button variant="secondary" onClick={() => finish(false)}>
                     Not really
                   </Button>
-                  <Button variant="ghost" onClick={() => finish(null)}>
+                  <Button variant="ghost" onClick={(e) => finish(null, e.currentTarget)}>
                     Not sure
                   </Button>
                 </div>

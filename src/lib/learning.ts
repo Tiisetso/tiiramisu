@@ -116,6 +116,9 @@ const BECAUSE: Record<SignalKey, string> = {
 
 export const interventionName = (i: Intervention, friend = "Maya") => (NAME[i] ?? "That").replace("Maya", friend);
 
+/** "Walks have" / "Breathing has" */
+export const hasHave = (i: Intervention) => (i === "walk" || i === "soundscape" ? "have" : "has");
+
 /** One-line "why this?" in the DESIGN.md voice. */
 export function explain(r: Ranked, friend = "Maya"): string {
   const name = interventionName(r.intervention, friend);
@@ -125,7 +128,7 @@ export function explain(r: Ranked, friend = "Maya"): string {
   }
   const record =
     r.tally.helped === r.tally.tried
-      ? `${name} has helped you every time you've tried it`
-      : `${name} has helped you ${r.tally.helped} of ${r.tally.tried} times`;
+      ? `${name} ${hasHave(r.intervention)} helped you every time you've tried it`
+      : `${name} ${hasHave(r.intervention)} helped you ${r.tally.helped} of ${r.tally.tried} times`;
   return why ? `${record}, and ${why}.` : `${record}.`;
 }

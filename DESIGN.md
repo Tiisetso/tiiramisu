@@ -354,6 +354,13 @@ Motion should feel like breathing: slow, continuous, never sudden.
 - **Fallback:** under `prefers-reduced-motion`, without WebGL, or on low battery, use 4 blurred CSS radial-gradient blobs (filter: blur(80px)) drifting via slow transforms. Reduced motion means a static gradient with only colour cross-fades.
 - Pause rendering when the tab is hidden. Cap at 30 fps on mobile, and render at half resolution, since the blur hides it.
 
+### Reinforcement (behavioural activation)
+Small actions are rewarded visibly; setbacks are acknowledged barely.
+- **Bloom:** a warm golden ripple from where the action happened, ~4 s. Small (a wave, a breath, a mood tap), medium (a check-in, doing an activity, answering the clinic, finishing onboarding), big ("yes, that helped").
+- **Afterglow:** each action today leaves the field a little lighter and warmer, capped, reset daily. You can *see* you've done things.
+- **Soften:** "not really" slows the field slightly for a few seconds. Never darker, never a penalty.
+- A check-in always blooms, whatever it says: showing up is the win. Reduced motion keeps the afterglow, drops the ripple.
+
 ### UI motion
 - Enter: fade + 12px rise, `{motion.duration-base}`, `{motion.ease-soft}`. Stagger lists by 60ms.
 - Screen transitions: cross-fade, `{motion.duration-slow}`. No sideways slides or bounces.

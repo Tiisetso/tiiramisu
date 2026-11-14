@@ -3,6 +3,8 @@
 import { motion, useReducedMotion } from "motion/react";
 import { EASE_BREATHE } from "@/components/motion";
 import { EXHALE_MS, INHALE_MS, useBreathCycle, type BreathPhase } from "@/lib/use-breath";
+import { useEffect, useRef } from "react";
+import { bloom } from "@/lib/field-events";
 
 const SMALL = 0.58;
 const WORDS: Record<BreathPhase, string> = {
@@ -29,6 +31,12 @@ export function BreathingGuide({
   rounds?: number;
 }) {
   const { phase, round } = useBreathCycle(active, rounds);
+  const orbRef = useRef<HTMLButtonElement>(null);
+  // each completed breath blooms a little; finishing blooms more
+  useEffect(() => {
+    if (phase === "in" && round > 1) bloom("small", orbRef.current);
+    if (phase === "done") bloom("medium", orbRef.current);
+  }, [phase, round]);
   const reduced = useReducedMotion();
   const breathing = phase === "in" || phase === "out";
   const dur = (phase === "in" ? INHALE_MS : EXHALE_MS) / 1000;
@@ -42,6 +50,7 @@ export function BreathingGuide({
   return (
     <div className="flex flex-col items-center">
       <button
+        ref={orbRef}
         type="button"
         onClick={onToggle}
         disabled={!onToggle}
