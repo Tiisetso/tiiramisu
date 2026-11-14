@@ -35,7 +35,7 @@ export function BreathingGuide({
   // each completed breath blooms a little; finishing blooms more
   useEffect(() => {
     if (phase === "in" && round > 1) bloom("small", orbRef.current);
-    if (phase === "done") bloom("medium", orbRef.current);
+    if (phase === "done") bloom("medium", orbRef.current, "breathed slowly");
   }, [phase, round]);
   const reduced = useReducedMotion();
   const breathing = phase === "in" || phase === "out";

@@ -47,7 +47,7 @@ export function OutreachCard() {
   }, [live, patient.id]);
 
   const respond = (choice: string) => {
-    if (choice !== "Not now") bloom("medium");
+    if (choice !== "Not now") bloom("medium", undefined, "answered your clinic");
     setAnswered(choice);
     void livePost("/api/outreach", { patientId: patient.id, response: choice });
   };

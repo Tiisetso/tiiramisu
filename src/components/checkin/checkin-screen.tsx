@@ -114,7 +114,7 @@ export function CheckinScreen({ onDone }: { onDone: () => void }) {
     });
     setActivityMood(response.analysis.tone.valence === "positive" ? "bright" : null);
     setPhase("result");
-    bloom("medium"); // showing up is the win, whatever it says
+    bloom("medium", undefined, "checked in"); // showing up is the win, whatever it says
     if (response.analysis.risk_flag === "reach_out") setCrisisOpen(true);
   }
 

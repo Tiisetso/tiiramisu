@@ -48,7 +48,7 @@ export function Thread({
     const clean = t.trim();
     if (!clean) return;
     send(room, clean, kind);
-    if (!CRISIS_PATTERN.test(clean)) bloom("small"); // reaching out counts
+    if (!CRISIS_PATTERN.test(clean)) bloom("small", undefined, isPeers ? "talked with your peers" : "reached out"); // reaching out counts
     setText("");
     // not safe? offer support first, gently
     if (CRISIS_PATTERN.test(clean)) setCrisisOpen(true);
