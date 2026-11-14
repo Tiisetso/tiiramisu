@@ -18,11 +18,12 @@ interface LearningContextValue {
 const LearningContext = createContext<LearningContextValue | null>(null);
 
 export function LearningProvider({ children }: { children: React.ReactNode }) {
-  const { day, state, checkin } = useDemo();
+  const { day, state, checkin, patient } = useDemo();
   const [fresh, setFresh] = useState(false);
   const [added, setAdded] = useState<Outcome[]>([]);
 
-  const history = useMemo(() => [...(fresh ? [] : SEED_HISTORY), ...added], [fresh, added]);
+  // only Aino has a seeded history; other patients start fresh
+  const history = useMemo(() => [...(fresh || !patient.isAino ? [] : SEED_HISTORY), ...added], [fresh, added, patient]);
   const ranked = useMemo(() => rank(history, state, checkin?.response.analysis.suggestion), [history, state, checkin]);
   const tallies = useMemo(() => tally(history, day), [history, day]);
 
