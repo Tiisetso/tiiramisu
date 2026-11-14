@@ -1,4 +1,5 @@
 import { withDb } from "@/lib/server/db";
+import { sendPush } from "@/lib/server/push";
 
 const ROOMS = new Set(["maya", "juho", "mum", "peers"]);
 const PEOPLE = new Set(["aino", "maya", "juho", "mum", "willow", "harbor", "fern"]);
@@ -47,6 +48,11 @@ export async function POST(request: Request) {
       "insert into messages (id, room, sender, text, kind) values ($1, $2, $3, $4, $5) on conflict (id) do nothing",
       [m.id!.slice(0, 64), m.room, m.from, m.text!.slice(0, 1000), m.kind === "wave" ? "wave" : "text"],
     );
+    // a real friend writing to Aino → one gentle notification (never the content on the lock screen)
+    if (m.room !== "peers" && m.from !== "aino") {
+      const name = m.from!.charAt(0).toUpperCase() + m.from!.slice(1);
+      await sendPush("aino", "wave", m.kind === "wave" ? `${name} sent you a wave` : `${name} sent you a message`, "/?from=circle").catch(() => {});
+    }
     return Response.json({ db: true, ok: true });
   });
 }

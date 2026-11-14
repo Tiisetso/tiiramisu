@@ -48,6 +48,8 @@ export function ClinicView() {
   const day = Math.min(DAYS - 1, Math.max(7, urlDay ?? DAYS - 1));
   const [selected, setSelected] = useState("aino");
   const [contacted, setContacted] = useState<Set<string>>(new Set());
+  /** clinic → patient outreach: when it was sent and what they chose */
+  const [outreach, setOutreach] = useState<Record<string, { sentAt: string; choice?: string; sending?: boolean }>>({});
   const [summaries, setSummaries] = useState<Record<string, { s: ClinicSummary; source: string } | "loading">>({});
   const live = useLive();
   const [build, setBuild] = useState<{ sha: string; status: string; components: number; trackers: number; dataGoesTo: string[]; url: string } | null>(null);
@@ -64,7 +66,7 @@ export function ClinicView() {
     const poll = async () => {
       const [c, a] = await Promise.all([
         liveGet<{ checkins: StoredCheckin[] }>("/api/checkins"),
-        liveGet<{ actions: { patientId: string; action: string }[] }>("/api/clinic-actions"),
+        liveGet<{ actions: { patientId: string; action: string; detail: string | null; at: string }[] }>("/api/clinic-actions"),
       ]);
       if (stopped) return;
       if (c) {
@@ -72,11 +74,19 @@ export function ClinicView() {
         for (const x of c.checkins) latest[x.patientId] ??= x; // newest first
         setLiveCheckins((cur) => (JSON.stringify(Object.keys(latest).map((k) => latest[k].id)) === JSON.stringify(Object.keys(cur).map((k) => cur[k].id)) ? cur : latest));
       }
-      if (a) setContacted((cur) => {
-        const next = new Set(cur);
-        a.actions.forEach((x) => x.action === "contacted" && next.add(x.patientId));
-        return next.size === cur.size ? cur : next;
-      });
+      if (a) {
+        setContacted((cur) => {
+          const next = new Set(cur);
+          a.actions.forEach((x) => x.action === "contacted" && next.add(x.patientId));
+          return next.size === cur.size ? cur : next;
+        });
+        const o: Record<string, { sentAt: string; choice?: string }> = {};
+        for (const x of a.actions) {
+          if (x.action === "outreach") o[x.patientId] = { sentAt: x.at };
+          if (x.action === "outreach_response" && o[x.patientId]) o[x.patientId].choice = x.detail ?? undefined;
+        }
+        setOutreach((cur) => (JSON.stringify(cur) === JSON.stringify(o) ? cur : o));
+      }
     };
     void poll();
     const iv = setInterval(poll, 3000);
@@ -336,8 +346,33 @@ export function ClinicView() {
               </ul>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <a href="tel:+358000000000" className="flex h-12 items-center justify-center rounded-full bg-dusk text-sm font-semibold text-white">
+            {outreach[current.p.id] && (
+              <p className="mt-6 rounded-[12px] bg-surface-warm px-4 py-3 text-[14px]" role="status">
+                {outreach[current.p.id].choice ? (
+                  <>
+                    <span className="font-medium">{current.p.name.split(" ")[0]} chose: {outreach[current.p.id].choice}</span>{" "}
+                    <span className="text-ash">· {minutesAgo(outreach[current.p.id].sentAt)} you reached out</span>
+                  </>
+                ) : (
+                  <span className="text-stone">
+                    Reach-out sent {minutesAgo(outreach[current.p.id].sentAt)} · waiting for {current.p.name.split(" ")[0]}
+                  </span>
+                )}
+              </p>
+            )}
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                onClick={async () => {
+                  setOutreach((o) => ({ ...o, [current.p.id]: { sentAt: new Date().toISOString(), sending: true } }));
+                  await livePost("/api/outreach", { patientId: current.p.id });
+                }}
+                disabled={!!outreach[current.p.id] && !outreach[current.p.id].choice}
+                className="col-span-2 h-12 rounded-full bg-dusk text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {outreach[current.p.id] && !outreach[current.p.id].choice ? "Reached out ✓" : "Reach out gently"}
+              </button>
+              <a href="tel:+358000000000" className="flex h-12 items-center justify-center rounded-full border border-stone text-sm font-semibold text-stone">
                 Call
               </a>
               <button

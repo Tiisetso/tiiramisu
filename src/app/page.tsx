@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence } from "motion/react";
-import { useState } from "react";
 import { BeginScreen } from "@/components/begin-screen";
 import { CheckinScreen } from "@/components/checkin/checkin-screen";
 import { DemoControls } from "@/components/demo-controls";
@@ -13,6 +12,8 @@ import { FriendView } from "@/components/circle/friend-view";
 import { LearningProvider } from "@/components/learning-provider";
 import { Onboarding } from "@/components/onboarding/onboarding";
 import { getConsent } from "@/lib/consent";
+import { clearBadge, registerServiceWorker } from "@/lib/push";
+import { useEffect, useState } from "react";
 import { LightField } from "@/components/light-field";
 import { FadeRise } from "@/components/motion";
 import { SoundProvider, useSound } from "@/components/sound-provider";
@@ -25,6 +26,7 @@ export default function Home() {
   return (
     <DemoProvider>
       <Field />
+      <PushBoot />
       <ChatProvider me={actAs ?? "aino"}>
         {actAs === "maya" ? (
           <FriendView />
@@ -39,6 +41,18 @@ export default function Home() {
       </ChatProvider>
     </DemoProvider>
   );
+}
+
+/** Service worker for push + never leave a number on the app icon. */
+function PushBoot() {
+  useEffect(() => {
+    void registerServiceWorker();
+    clearBadge();
+    const onVisible = () => document.visibilityState === "visible" && clearBadge();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+  return null;
 }
 
 function Field() {

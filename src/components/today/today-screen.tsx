@@ -9,6 +9,7 @@ import { Orb } from "@/components/orb";
 import { useLearning } from "@/components/learning-provider";
 import { useSound } from "@/components/sound-provider";
 import { ActivitySheet } from "@/components/today/activity-sheet";
+import { OutreachCard } from "@/components/today/outreach-card";
 import { WhatHelps } from "@/components/today/what-helps";
 import type { Intervention } from "@/lib/analysis";
 import { explain } from "@/lib/learning";
@@ -76,6 +77,8 @@ export function TodayScreen({ onCheckin, onOpenCalm }: { onCheckin: () => void; 
           {hydrated ? greeting() : "Hello"}, <span className="italic">{persona.name}</span>
         </h1>
       </FadeRise>
+
+      <OutreachCard />
 
       {/* Check-in */}
       <FadeRise index={2} className="mt-6">
