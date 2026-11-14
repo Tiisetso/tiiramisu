@@ -1,0 +1,116 @@
+name: ci
+
+# build and synthetic-patient run on CRACI runners with a deny-by-default network policy, so
+# each build's SBOM is complete and every outbound connection is on record. privacy-guard, an
+# independent auditor on a GitHub-hosted runner, reads those SBOMs and network traces back
+# through the CRACI API and fails the build if a tracker sneaks in or data goes anywhere we
+# didn't declare.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *" # canary: a synthetic patient checks in every 6 hours
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  build:
+    name: build
+    runs-on: craci
+    steps:
+      - uses: cracicorp/setup@v1
+        with:
+          size: "4"
+          network: |
+            default: deny
+            presets: [npm, github, fonts]
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: build-npm-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  synthetic-patient:
+    name: synthetic-patient
+    needs: build
+    runs-on: craci
+    steps:
+      - uses: cracicorp/setup@v1
+        with:
+          size: "4"
+          image: ubuntu-24.04
+          network: |
+            default: deny
+            presets: [npm, github, fonts]
+            connections:
+              - tls:
+                  serverNamePatterns: [api.anthropic.com, api.elevenlabs.io]
+                  ports: [443]
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: e2e-npm-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+      # No browser download: the CDN redirects to storage.googleapis.com (any GCS bucket), which we
+      # won't allow. The full Ubuntu image already ships Google Chrome, so test with that.
+      - name: Use the image's Google Chrome
+        run: google-chrome --version
+      - run: npm run build
+      - name: Synthetic patient lives through her drift
+        run: npx playwright test
+        env:
+          PW_CHANNEL: chrome
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          E2E_SKIP_AI: ${{ secrets.ANTHROPIC_API_KEY == '' && '1' || '' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: synthetic-patient-videos
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
+  # The auditor runs *outside* the platform it audits: CRACI's API refuses calls made from
+  # inside CRACI runners (403), so this GitHub-API/CRACI-API chore runs on a GitHub-hosted runner.
+  privacy-guard:
+    name: privacy-guard
+    needs: [build, synthetic-patient]
+    if: ${{ always() && needs.build.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the guard (only pg, isolated from the app's tree)
+        run: |
+          mkdir -p /tmp/guard && cp scripts/craci-guard.mjs scripts/aiven-ca.mjs /tmp/guard/
+          cd /tmp/guard && npm init -y > /dev/null && npm install --no-audit --no-fund pg@8
+      - name: Verify SBOMs and network traces via the CRACI API
+        run: node /tmp/guard/craci-guard.mjs
+        env:
+          CRACI_API_TOKEN: ${{ secrets.CRACI_API_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GUARD_JOBS: build,synthetic-patient
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: craci-attestation
+          path: craci-attestation.json
+          if-no-files-found: ignore

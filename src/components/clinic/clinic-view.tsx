@@ -50,6 +50,11 @@ export function ClinicView() {
   const [contacted, setContacted] = useState<Set<string>>(new Set());
   const [summaries, setSummaries] = useState<Record<string, { s: ClinicSummary; source: string } | "loading">>({});
   const live = useLive();
+  const [build, setBuild] = useState<{ sha: string; status: string; components: number; trackers: number; dataGoesTo: string[]; url: string } | null>(null);
+  useEffect(() => {
+    if (live !== true) return;
+    liveGet<{ build: typeof build }>("/api/build-trust").then((d) => d?.build && setBuild(d.build));
+  }, [live]);
   const [liveCheckins, setLiveCheckins] = useState<Record<string, StoredCheckin>>({});
 
   // Live mode: new check-ins and shared "contacted" state from Aiven, every 3 s
@@ -348,7 +353,19 @@ export function ClinicView() {
             </div>
           </section>
         </div>
-        <p className="mt-10 text-center text-[12px] text-ash">
+        {build && (
+          <a
+            href={build.url}
+            target="_blank"
+            rel="noreferrer"
+            className="mx-auto mt-10 block max-w-[720px] rounded-[16px] border border-hairline bg-surface px-5 py-3 text-center text-[13px] text-stone hover:bg-surface-warm"
+          >
+            {build.status === "verified" ? "✓ Privacy-verified build" : "⚠ Build failed privacy checks"} {build.sha} on CRACI ·{" "}
+            {build.components} components, {build.trackers} trackers · patient data only goes to{" "}
+            {build.dataGoesTo.length ? build.dataGoesTo.join(" and ") : "our own servers"}
+          </a>
+        )}
+        <p className="mt-4 text-center text-[12px] text-ash">
           {live === true
             ? `Live · ${liveStoreLabel() ?? "Aiven for PostgreSQL"} · TLS verified · no audio is ever stored`
             : live === false
