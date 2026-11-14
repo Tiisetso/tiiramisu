@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useDemo } from "@/components/demo-provider";
 import type { Intervention } from "@/lib/analysis";
 import { rank, SEED_HISTORY, tally, type Outcome, type Ranked, type Tally } from "@/lib/learning";
+import { liveGet, livePost, useLive } from "@/lib/live";
 
 interface LearningContextValue {
   history: Outcome[];
@@ -21,6 +22,19 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
   const { day, state, checkin, patient } = useDemo();
   const [fresh, setFresh] = useState(false);
   const [added, setAdded] = useState<Outcome[]>([]);
+  const live = useLive();
+
+  // Live mode: this person's answers persist in Aiven and come back on any device
+  useEffect(() => {
+    if (live !== true) return;
+    let cancelled = false;
+    liveGet<{ outcomes: Outcome[] }>(`/api/outcomes?patient=${patient.id}`).then((d) => {
+      if (!cancelled && d?.outcomes.length) setAdded(d.outcomes);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [live, patient.id]);
 
   // only Aino has a seeded history; other patients start fresh
   const history = useMemo(() => [...(fresh || !patient.isAino ? [] : SEED_HISTORY), ...added], [fresh, added, patient]);
@@ -29,7 +43,8 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
 
   const record = useCallback((intervention: Intervention, helped: boolean | null) => {
     setAdded((a) => [...a, { day, intervention, helped }]);
-  }, [day]);
+    void livePost("/api/outcomes", { patientId: patient.id, day, intervention, helped });
+  }, [day, patient.id]);
 
   const setFreshAndReset = useCallback((f: boolean) => {
     setFresh(f);

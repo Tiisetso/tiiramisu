@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Sparkline } from "@/components/today/sparkline";
-import { ACTION_LABEL, type ClinicPatientInput, type ClinicSummary } from "@/lib/clinic";
+import { ACTION_LABEL, type ClinicPatientInput, type ClinicSummary, type StoredCheckin } from "@/lib/clinic";
+import { liveGet, livePost, liveStoreLabel, useLive } from "@/lib/live";
 import { PATIENTS, type Patient } from "@/lib/demo/patients";
 import { DAYS } from "@/lib/demo/persona";
 import { computeDayState, type DayState } from "@/lib/signals";
@@ -15,10 +16,18 @@ interface Row {
   state: DayState;
   trend: number[];
   lastCheckin: number | null; // days ago
+  live?: StoredCheckin;
+}
+
+function minutesAgo(iso: string) {
+  const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`;
 }
 
 function status(r: Row): { label: string; tone: "care" | "watch" | "quiet" | "steady" } {
+  if (r.live?.analysis.risk_flag === "reach_out") return { label: "Reach out now", tone: "care" };
   if (r.state.level === "drifting") return { label: "Needs a call", tone: "care" };
+  if (r.live?.analysis.risk_flag === "watch") return { label: "Watch", tone: "watch" };
   if (r.state.level === "watch") return { label: "Watch", tone: "watch" };
   if ((r.lastCheckin ?? 99) >= 4) return { label: "No check-ins", tone: "quiet" };
   return { label: "Steady", tone: "steady" };
@@ -40,6 +49,37 @@ export function ClinicView() {
   const [selected, setSelected] = useState("aino");
   const [contacted, setContacted] = useState<Set<string>>(new Set());
   const [summaries, setSummaries] = useState<Record<string, { s: ClinicSummary; source: string } | "loading">>({});
+  const live = useLive();
+  const [liveCheckins, setLiveCheckins] = useState<Record<string, StoredCheckin>>({});
+
+  // Live mode: new check-ins and shared "contacted" state from Aiven, every 3 s
+  useEffect(() => {
+    if (live !== true) return;
+    let stopped = false;
+    const poll = async () => {
+      const [c, a] = await Promise.all([
+        liveGet<{ checkins: StoredCheckin[] }>("/api/checkins"),
+        liveGet<{ actions: { patientId: string; action: string }[] }>("/api/clinic-actions"),
+      ]);
+      if (stopped) return;
+      if (c) {
+        const latest: Record<string, StoredCheckin> = {};
+        for (const x of c.checkins) latest[x.patientId] ??= x; // newest first
+        setLiveCheckins((cur) => (JSON.stringify(Object.keys(latest).map((k) => latest[k].id)) === JSON.stringify(Object.keys(cur).map((k) => cur[k].id)) ? cur : latest));
+      }
+      if (a) setContacted((cur) => {
+        const next = new Set(cur);
+        a.actions.forEach((x) => x.action === "contacted" && next.add(x.patientId));
+        return next.size === cur.size ? cur : next;
+      });
+    };
+    void poll();
+    const iv = setInterval(poll, 3000);
+    return () => {
+      stopped = true;
+      clearInterval(iv);
+    };
+  }, [live]);
 
   const rows = useMemo<Row[]>(
     () =>
@@ -52,20 +92,23 @@ export function ClinicView() {
             lastCheckin = day - d;
             break;
           }
-        return { p, state, trend, lastCheckin };
+        return { p, state, trend, lastCheckin: liveCheckins[p.id] ? 0 : lastCheckin, live: liveCheckins[p.id] };
       }),
-    [day],
+    [day, liveCheckins],
   );
 
   const sorted = [...rows].sort(
-    (a, b) => Number(contacted.has(a.p.id)) - Number(contacted.has(b.p.id)) || b.state.driftScore - a.state.driftScore,
+    (a, b) =>
+      Number(contacted.has(a.p.id)) - Number(contacted.has(b.p.id)) ||
+      Number(b.live?.analysis.risk_flag === "reach_out") - Number(a.live?.analysis.risk_flag === "reach_out") ||
+      b.state.driftScore - a.state.driftScore,
   );
   const current = rows.find((r) => r.p.id === selected) ?? sorted[0];
   const needCall = rows.filter((r) => r.state.level === "drifting" && !contacted.has(r.p.id)).length;
   const labels = Array.from({ length: 21 }, (_, i) => (i === 20 ? "Today" : WEEKDAYS[current.p.days[day - 20 + i].weekday]));
 
   // Claude summary for the selected patient (once per patient+day)
-  const key = `${current.p.id}:${day}`;
+  const key = `${current.p.id}:${day}:${current.live?.id ?? ""}`;
   const entry = summaries[key];
   useEffect(() => {
     if (entry) return;
@@ -76,7 +119,13 @@ export function ClinicView() {
       driftScore: current.state.driftScore,
       missedCheckins: current.state.missedCheckins,
       signals: current.state.signals.map((s) => ({ label: s.label, phrase: s.phrase, z: s.z })),
-      quotes: current.p.quotes,
+      quotes: current.live
+        ? [
+            ...current.live.analysis.notable_language.map((n) => n.quote),
+            ...(current.live.transcript ? [`(today's check-in) ${current.live.transcript.slice(0, 280)}`] : []),
+            ...current.p.quotes,
+          ]
+        : current.p.quotes,
     };
     let cancelled = false;
     const t = setTimeout(() => {
@@ -141,6 +190,9 @@ export function ClinicView() {
                         <span className="flex items-center gap-2">
                           <span className={`size-2.5 shrink-0 rounded-full ${DOT[st.tone]}`} aria-hidden />
                           <span className="truncate text-[15px] font-medium">{r.p.name}</span>
+                          {r.live && (
+                            <span className="shrink-0 rounded-full bg-dusk px-2 py-0.5 text-[11px] font-semibold text-white">New check-in</span>
+                          )}
                         </span>
                         <span className="mt-0.5 block pl-4.5 text-[13px] text-ash">
                           {contacted.has(r.p.id) ? "Contacted today" : st.label} · {r.p.weeksSinceTms} wk after TMS
@@ -152,7 +204,9 @@ export function ClinicView() {
                       <span className="truncate text-[13px] text-ash">
                         {r.state.top.length ? r.state.top.slice(0, 2).map((s) => s.label).join(", ") : "Nothing notable"}
                       </span>
-                      <span className={`text-[13px] ${(r.lastCheckin ?? 99) >= 3 ? "font-medium text-ink" : "text-ash"}`}>{agoLabel(r.lastCheckin)}</span>
+                      <span className={`text-[13px] ${(r.lastCheckin ?? 99) >= 3 ? "font-medium text-ink" : "text-ash"}`}>
+                        {r.live ? minutesAgo(r.live.createdAt) : agoLabel(r.lastCheckin)}
+                      </span>
                     </button>
                   </li>
                 );
@@ -182,6 +236,35 @@ export function ClinicView() {
                 {status(current).label}
               </span>
             </div>
+
+            {current.live && (
+              <div
+                className={`mt-5 rounded-[16px] border p-4 ${
+                  current.live.analysis.risk_flag === "reach_out" ? "border-care bg-care/5" : "border-hairline bg-surface-warm"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="eyebrow text-ash">Today&rsquo;s check-in · {minutesAgo(current.live.createdAt)}</p>
+                  {current.live.analysis.risk_flag === "reach_out" && (
+                    <span className="rounded-full bg-care px-2.5 py-0.5 text-[12px] font-semibold text-white">Reach out now</span>
+                  )}
+                </div>
+                <p className="mt-2 text-[15px] leading-relaxed">{current.live.analysis.summary}</p>
+                <p className="mt-2 text-[13px] text-ash">
+                  Tone: {current.live.analysis.tone.energy} energy, {current.live.analysis.tone.valence}
+                  {current.live.voice ? ` · Voice: ${current.live.voice.phrase.toLowerCase()}` : ""}
+                </p>
+                {current.live.analysis.themes.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {current.live.analysis.themes.map((t) => (
+                      <span key={t} className="rounded-full border border-hairline bg-surface px-2.5 py-0.5 text-[12px]">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-5">
               <p className="eyebrow text-ash">Drift, last 3 weeks</p>
@@ -253,7 +336,10 @@ export function ClinicView() {
                 Call
               </a>
               <button
-                onClick={() => setContacted((c) => new Set(c).add(current.p.id))}
+                onClick={() => {
+                  setContacted((c) => new Set(c).add(current.p.id));
+                  void livePost("/api/clinic-actions", { patientId: current.p.id, action: "contacted" });
+                }}
                 disabled={contacted.has(current.p.id)}
                 className="h-12 rounded-full border border-stone text-sm font-semibold text-stone disabled:opacity-50"
               >
@@ -262,6 +348,13 @@ export function ClinicView() {
             </div>
           </section>
         </div>
+        <p className="mt-10 text-center text-[12px] text-ash">
+          {live === true
+            ? `Live · ${liveStoreLabel() ?? "Aiven for PostgreSQL"} · TLS verified · no audio is ever stored`
+            : live === false
+              ? "Local demo mode (no shared database configured)"
+              : ""}
+        </p>
       </main>
     </div>
   );

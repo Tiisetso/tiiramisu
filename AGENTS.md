@@ -68,7 +68,7 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 | 6 | 1 | Today screen | in review |
 | 7 | 2 | Adaptive soundscape | in review |
 | 8 | 2 | Response loop + learning | in review |
-| 9 | 3 | Circle: friends + anonymous peers | in review |
+| 9 | 3 | Circle: friends + anonymous peers | done |
 | 10 | 3 | Apple Shortcut ingest | todo |
 | 11 | 4 | Clinician view | in review |
 | 12 | 4 | Demo video | todo |
@@ -90,3 +90,4 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 - **Learning (`src/lib/learning.ts`):** per-person Beta posterior of "did that help?" per intervention + relevance bonus (biggest for the most-shifted signal) + small bonus for Claude's suggestion. Aino has ~20 seeded outcomes; ◐ drawer → "Fresh user" shows the same day ranked for someone the app doesn't know yet.
 - **Circle (`src/lib/chat.ts`, `chat-provider.tsx`):** live chat between windows via `BroadcastChannel` (no backend). Open `/?as=maya` in a second window to be Maya's phone; she sees only Aino's soft status. Scripted replies only when the real person isn't open. Peer room is anonymous (Aino = "Cloudberry"), has Report, and a crisis-phrase check opens the crisis sheet.
 - **Clinic (`/clinic?day=N`):** Aino + 5 simulated patients (`src/lib/demo/patients.ts`, same generator + signals pipeline), sorted by drift; "No check-ins" flag (Jonas). Selecting a patient asks `/api/clinic-summary` (Claude, cached in memory, canned fallback) for a summary, watch points and suggested action. Link from the ◐ drawer.
+- **Live mode (Aiven for PostgreSQL, Frankfurt EU):** `DATABASE_URL` (server-only) + CA cert (`certs/aiven-ca.pem`, embedded in `src/lib/server/aiven-ca.ts`, TLS verified). Free plan → no PgBouncer; small per-instance pool (max 3, 10 s idle). Tables auto-created (`SCHEMA` in `src/lib/server/db.ts`; `scripts/migrate.mjs`). Chat syncs across devices + presence; check-ins (features/transcript/analysis, **never audio**) appear in `/clinic` in ~3 s; outcomes persist; "contacted" shared. Without `DATABASE_URL` everything runs locally. **Before the demo:** `node --env-file=.env.local scripts/reset-live.mjs`.

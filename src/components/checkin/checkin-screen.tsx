@@ -11,6 +11,7 @@ import type { AnalyzeContext, AnalyzeResponse, VoiceDeltas } from "@/lib/analysi
 import { loadVoiceBaseline, saveVoiceBaseline, voiceDeltas, voicePhrase } from "@/lib/voice/baseline";
 import { MAX_SECONDS, useVoiceRecorder, type Recording } from "@/lib/voice/recorder";
 import { useDemoMode } from "@/lib/use-client";
+import { livePost } from "@/lib/live";
 
 type Phase = "intro" | "recording" | "thinking" | "result" | "typed";
 
@@ -40,7 +41,7 @@ const SAMPLES: { label: string; transcript: string; deltas: VoiceDeltas }[] = [
 const fmt = (s: number) => `0:${String(Math.max(0, Math.ceil(s))).padStart(2, "0")}`;
 
 export function CheckinScreen({ onDone }: { onDone: () => void }) {
-  const { persona, day, today, state, levelRef, setActivityMood, setCheckin, checkin } = useDemo();
+  const { persona, patient, day, today, state, levelRef, setActivityMood, setCheckin, checkin } = useDemo();
   const demo = useDemoMode();
   const recorder = useVoiceRecorder(levelRef);
   const { duck } = useSound();
@@ -96,6 +97,15 @@ export function CheckinScreen({ onDone }: { onDone: () => void }) {
     const r: CheckinResult = { day, response, voice, isBaseline };
     setResult(r);
     setCheckin(r);
+    // share with the clinic (features, transcript and analysis only; never audio)
+    void livePost("/api/checkins", {
+      patientId: patient.id,
+      day,
+      transcript: response.transcript,
+      analysis: response.analysis,
+      voice,
+      source: response.source,
+    });
     setActivityMood(response.analysis.tone.valence === "positive" ? "bright" : null);
     setPhase("result");
     if (response.analysis.risk_flag === "reach_out") setCrisisOpen(true);
