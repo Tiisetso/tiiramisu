@@ -70,7 +70,7 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 | 8 | 2 | Response loop + learning | in review |
 | 9 | 3 | Circle: friends + anonymous peers | in review |
 | 10 | 3 | Apple Shortcut ingest | todo |
-| 11 | 4 | Clinician view | todo |
+| 11 | 4 | Clinician view | in review |
 | 12 | 4 | Demo video | todo |
 | 13 | 4 | Pitch + submission | todo |
 
@@ -89,3 +89,4 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 - **Soundscape (`src/lib/sound/engine.ts`):** Tone.js pads + sparse bells per mood (chords, tempo, filter) over ElevenLabs Sound Effects loops in `public/audio/` (generated once by `scripts/generate-ambience.mts`, levelled in code). calm → forest, low → rain, bright → sea, night → night. Starts on the Begin tap; ducks to silence while the mic records.
 - **Learning (`src/lib/learning.ts`):** per-person Beta posterior of "did that help?" per intervention + relevance bonus (biggest for the most-shifted signal) + small bonus for Claude's suggestion. Aino has ~20 seeded outcomes; ◐ drawer → "Fresh user" shows the same day ranked for someone the app doesn't know yet.
 - **Circle (`src/lib/chat.ts`, `chat-provider.tsx`):** live chat between windows via `BroadcastChannel` (no backend). Open `/?as=maya` in a second window to be Maya's phone; she sees only Aino's soft status. Scripted replies only when the real person isn't open. Peer room is anonymous (Aino = "Cloudberry"), has Report, and a crisis-phrase check opens the crisis sheet.
+- **Clinic (`/clinic?day=N`):** Aino + 5 simulated patients (`src/lib/demo/patients.ts`, same generator + signals pipeline), sorted by drift; "No check-ins" flag (Jonas). Selecting a patient asks `/api/clinic-summary` (Claude, cached in memory, canned fallback) for a summary, watch points and suggested action. Link from the ◐ drawer.

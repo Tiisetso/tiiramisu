@@ -58,26 +58,40 @@ function mulberry32(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-const rand = mulberry32(20261114);
+let rand = mulberry32(20261114);
 const gauss = (sd = 1) => {
   // Box–Muller
   const u = Math.max(rand(), 1e-9);
   const v = rand();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) * sd;
 };
+
+export interface GenerateOptions {
+  seed: number;
+  /** day the drift starts (≥ DAYS = never) */
+  driftStart: number;
+  /** 0..1, how far the drift goes by the last day */
+  driftStrength: number;
+  /** optional temporary wobble centred on this day */
+  wobbleAt?: number;
+  wobbleStrength?: number;
+  /** days with no check-in */
+  skipDays?: number[];
+}
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
 const round = (x: number, d = 0) => Math.round(x * 10 ** d) / 10 ** d;
 
-/** 0 before the drift, easing to 1 on the last day. */
-function driftAmount(day: number) {
-  if (day < DRIFT_START) return 0;
-  const t = (day - DRIFT_START) / (DAYS - 1 - DRIFT_START);
-  return t * t * (3 - 2 * t); // smoothstep
+/** 0 before the drift, easing to `strength` on the last day. */
+function driftAmount(day: number, start: number, strength: number) {
+  if (day < start || start >= DAYS - 1) return 0;
+  const t = (day - start) / (DAYS - 1 - start);
+  return strength * t * t * (3 - 2 * t); // smoothstep
 }
 
 /** A small mid-period wobble (days 30–33) that recovers: shows the app isn't jumpy. */
-function wobble(day: number) {
-  return day >= 30 && day <= 33 ? 0.5 * Math.sin(((day - 30) / 3) * Math.PI) : 0;
+function wobble(day: number, at: number | undefined, strength: number) {
+  if (at === undefined) return 0;
+  return day >= at - 2 && day <= at + 1 ? strength * Math.sin(((day - (at - 2)) / 3) * Math.PI) : 0;
 }
 
 /** Typical activity curve by hour (0..1), active day, quiet night. */
@@ -87,7 +101,8 @@ const ACTIVITY_SHAPE = [
 ];
 const SHAPE_SUM = ACTIVITY_SHAPE.reduce((a, b) => a + b, 0);
 
-function generate(): DayData[] {
+export function generate(opts: GenerateOptions): DayData[] {
+  rand = mulberry32(opts.seed);
   const days: DayData[] = [];
   // day 59 is "today"; anchor weekday so today is a Saturday (demo day)
   const todayWeekday = 6;
@@ -95,7 +110,7 @@ function generate(): DayData[] {
   for (let day = 0; day < DAYS; day++) {
     const weekday = (((todayWeekday - (DAYS - 1 - day)) % 7) + 7) % 7;
     const weekend = weekday === 0 || weekday === 6;
-    const d = Math.max(driftAmount(day), wobble(day));
+    const d = Math.max(driftAmount(day, opts.driftStart, opts.driftStrength), wobble(day, opts.wobbleAt, opts.wobbleStrength ?? 0.5));
 
     // Sleep: later, more irregular, less efficient
     const midpoint = 3.4 + (weekend ? 0.6 : 0) + d * 1.8 + gauss(0.25 + d * 0.6);
@@ -117,7 +132,7 @@ function generate(): DayData[] {
 
     // Self-report
     const moodRaw = 3.9 - d * 1.8 + gauss(0.45);
-    const skipped = (day === 55 || day === 57) ? true : day % 9 === 4; // fewer check-ins late
+    const skipped = (opts.skipDays ?? []).includes(day) || day % 9 === 4; // occasional missed check-ins
     const mood = skipped ? null : clamp(Math.round(moodRaw), 1, 5);
 
     // Voice: slower, more pauses, flatter, quieter
@@ -149,4 +164,11 @@ function generate(): DayData[] {
   return days;
 }
 
-export const DEMO_DAYS: DayData[] = generate();
+export const DEMO_DAYS: DayData[] = generate({
+  seed: 20261114,
+  driftStart: DRIFT_START,
+  driftStrength: 1,
+  wobbleAt: 32,
+  wobbleStrength: 0.5,
+  skipDays: [55, 57],
+});

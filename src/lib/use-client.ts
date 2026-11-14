@@ -38,3 +38,15 @@ export function useActAs() {
     () => null,
   );
 }
+
+/** `?day=N` from the URL (clamped by the caller), null if absent. */
+export function useUrlNumber(name: string) {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => {
+      const v = new URLSearchParams(window.location.search).get(name);
+      return v === null || Number.isNaN(Number(v)) ? null : Number(v);
+    },
+    () => null,
+  );
+}

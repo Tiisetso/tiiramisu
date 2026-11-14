@@ -99,6 +99,15 @@ export function DemoControls() {
             </div>
             <p className="mt-2 text-[12px] text-fg-2">Current: {mood}</p>
 
+            <a
+              href={`/clinic?day=${day}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 block w-full rounded-full bg-neutral py-2 text-center text-[13px] font-medium text-on-neutral"
+            >
+              Open clinician view ↗
+            </a>
+
             <button
               onClick={() => {
                 clearVoiceBaseline();
