@@ -181,6 +181,22 @@ export class Soundscape {
     if (this.running) this.rampMaster();
   }
 
+  /**
+   * Reinforcement chime (DESIGN.md → Reinforcement): a soft rising figure in the current mood's
+   * scale. small = one note, medium = two, big = three. Inaudible when muted or recording (master).
+   */
+  chime(amp: number) {
+    if (!this.running || !this.T) return;
+    const scale = MOOD_SOUND[this.mood].bells.length ? MOOD_SOUND[this.mood].bells : MOOD_SOUND.calm.bells;
+    const notes = [...scale].sort((x, y) => this.T!.Frequency(x).toFrequency() - this.T!.Frequency(y).toFrequency());
+    const count = amp >= 0.95 ? 3 : amp >= 0.7 ? 2 : 1;
+    const start = Math.max(0, Math.floor(Math.random() * (notes.length - count)));
+    const now = this.T.now() + 0.03;
+    for (let i = 0; i < count; i++) {
+      this.bell.triggerAttackRelease(notes[start + i], 1.6, now + i * 0.16, 0.35 + amp * 0.3);
+    }
+  }
+
   get isRunning() {
     return this.running;
   }

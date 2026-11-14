@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useMood } from "@/components/mood-provider";
+import { onFieldEvent } from "@/lib/field-events";
 import { Soundscape, type Scene } from "@/lib/sound/engine";
 
 interface SoundContextValue {
@@ -33,6 +34,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   }, [mood]);
 
   useEffect(() => () => engine.current?.dispose(), []);
+
+  // every bloom is heard as well as seen
+  useEffect(() => onFieldEvent((e) => e.kind === "bloom" && engine.current?.chime(e.amp)), []);
 
   const start = useCallback(async () => {
     if (engine.current?.isRunning) return;

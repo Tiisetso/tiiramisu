@@ -19,7 +19,9 @@ export const GLOW_CAP = 0.55;
 const listeners = new Set<(e: FieldEvent) => void>();
 export const onFieldEvent = (fn: (e: FieldEvent) => void) => {
   listeners.add(fn);
-  return () => listeners.delete(fn);
+  return () => {
+    listeners.delete(fn);
+  };
 };
 
 const glowKey = () => `tiiramisu.afterglow.${new Date().toISOString().slice(0, 10)}`;
