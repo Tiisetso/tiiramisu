@@ -18,17 +18,19 @@ const REPO = env.GITHUB_REPOSITORY;
 const JOBS = (env.GUARD_JOBS ?? "build,synthetic-patient").split(",").map((s) => s.trim());
 const CRACI = "https://api.craci.com";
 
-/** Packages that would quietly ship people's data somewhere. Health app: none allowed. */
-const TRACKER = new RegExp(
-  [
-    "segment", "analytics-node", "@segment/", "mixpanel", "amplitude", "posthog", "hotjar", "fullstory", "logrocket",
-    "heap-api", "smartlook", "microsoft/clarity", "react-ga", "ga-4-react", "gtag", "google-analytics", "facebook-pixel",
-    "react-facebook-pixel", "@datadog/browser", "newrelic", "@sentry/", "bugsnag", "rollbar", "intercom", "hubspot",
-    "matomo", "plausible", "umami", "@vercel/analytics", "@vercel/speed-insights", "openreplay", "mouseflow", "quantcast",
-    "onesignal", "branch-sdk", "appsflyer", "adjust-sdk",
-  ].map((s) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|"),
-  "i",
-);
+/** Packages that would quietly ship people's data somewhere. Health app: none allowed.
+ *  Matched against the full npm name (scope included), anchored: no substring false positives. */
+const TRACKER =
+  /^(@segment\/.+|@amplitude\/.+|@sentry\/.+|@bugsnag\/.+|@datadog\/browser-.+|@newrelic\/.+|@hotjar\/.+|@fullstory\/.+|@intercom\/.+|@hubspot\/.+|@openreplay\/.+|@umami\/.+|@vercel\/(analytics|speed-insights)|@microsoft\/clarity|analytics-node|mixpanel(-browser)?|amplitude-js|posthog-(js|node)|logrocket|react-ga4?|ga-4-react|react-gtm-module|gtag|react-facebook-pixel|newrelic|bugsnag(-js)?|rollbar|react-use-intercom|matomo-tracker|plausible-tracker|smartlook-client|heap-api|branch-sdk|appsflyer-.+|onesignal-.+)$/i;
+
+/** "@scope/name" from a CycloneDX component (group + name, or the purl). */
+function npmName(c) {
+  if (c.purl?.startsWith("pkg:npm/")) {
+    const path = decodeURIComponent(c.purl.slice(8).split("?")[0].split("#")[0]); // "@scope/name@1.2.3"
+    return path.startsWith("@") ? path.split("@").slice(0, 2).join("@") : path.split("@")[0];
+  }
+  return c.group ? `${c.group}/${c.name}` : c.name;
+}
 
 /** Hosts each job is *meant* to talk to. Anything else that got out is a failure. */
 const EXPECTED = {
@@ -96,7 +98,7 @@ async function main() {
     const [bom, trace] = await Promise.all([craci(`/v1preview1/sbom?${q}`, "application/vnd.cyclonedx+json"), craci(`/v1preview1/network-trace?${q}`)]);
 
     const components = flatten(bom.components);
-    const trackers = components.filter((c) => TRACKER.test(`${c.name} ${c.purl ?? ""} ${c.group ?? ""}`)).map((c) => `${c.group ? c.group + "/" : ""}${c.name}@${c.version ?? "?"}`);
+    const trackers = components.filter((c) => TRACKER.test(npmName(c) ?? "")).map((c) => npmName(c));
 
     const flows = new Map();
     const blocked = new Map();
@@ -137,7 +139,7 @@ async function main() {
   // ── human-readable report ──
   const kb = (b) => `${(b / 1024).toFixed(0)} KB`;
   let md = `## 🔒 Privacy guard: ${report.status === "verified" ? "✅ verified" : "❌ failed"}\n\n`;
-  md += "Every job ran on CRACI with a deny-by-default network policy. This report is built from CRACI's own SBOMs and network traces.\n\n";
+  md += "build and synthetic-patient ran on CRACI with deny-by-default network policies. This report is built from CRACI's own SBOMs and network traces.\n\n";
   md += "| Job | SBOM components | Trackers | Hosts reached | Blocked attempts |\n|---|---:|---:|---|---:|\n";
   for (const j of report.jobs) md += `| ${j.name} | ${j.components} | ${j.trackers.length} | ${j.hosts.map((h) => h.host).join(", ") || "none"} | ${j.blocked.length} |\n`;
   const flowsAll = report.jobs.flatMap((j) => j.dataFlows);
