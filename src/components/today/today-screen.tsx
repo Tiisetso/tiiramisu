@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CrisisSheet } from "@/components/crisis-sheet";
+import { PrivacySheet } from "@/components/onboarding/privacy-sheet";
 import { useDemo } from "@/components/demo-provider";
 import { Button, FadeRise } from "@/components/motion";
 import { Orb } from "@/components/orb";
@@ -35,6 +36,7 @@ export function TodayScreen({ onCheckin, onOpenCalm }: { onCheckin: () => void; 
   const { persona, days, day, today, state, checkin, levelRef } = useDemo();
   const hydrated = useHydrated();
   const [crisisOpen, setCrisisOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const sound = useSound();
   const { ranked } = useLearning();
   const [activity, setActivity] = useState<Intervention | null>(null);
@@ -174,9 +176,13 @@ export function TodayScreen({ onCheckin, onOpenCalm }: { onCheckin: () => void; 
         <p className="mt-3 px-1 text-[12px] leading-relaxed text-fg-2">
           Compared with your own last four weeks. Tap a line to see a day.
         </p>
+        <button onClick={() => setPrivacyOpen(true)} className="mt-6 w-full py-2 text-center text-[13px] font-medium text-fg-2 underline-offset-4 hover:underline">
+          Privacy &amp; what&rsquo;s shared
+        </button>
       </FadeRise>
 
       <ActivitySheet intervention={activity} onClose={() => setActivity(null)} onOpenCalm={onOpenCalm} />
+      <PrivacySheet open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
       <CrisisSheet open={crisisOpen} onClose={() => setCrisisOpen(false)} name={persona.name} contact={persona.circle[0]} />
     </main>
   );

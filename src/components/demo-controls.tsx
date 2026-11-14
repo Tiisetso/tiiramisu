@@ -10,6 +10,7 @@ import { PATIENTS } from "@/lib/demo/patients";
 import { DAYS } from "@/lib/demo/persona";
 import { MOODS } from "@/lib/mood";
 import { clearVoiceBaseline } from "@/lib/voice/baseline";
+import { resetConsent } from "@/lib/consent";
 import { useDemoMode } from "@/lib/use-client";
 
 const JUMPS = [
@@ -135,6 +136,15 @@ export function DemoControls() {
               className="mt-4 w-full rounded-full border border-line py-2 text-[13px] font-medium"
             >
               {voiceReset ? "Voice baseline cleared · next check-in sets it" : "Reset voice baseline"}
+            </button>
+            <button
+              onClick={() => {
+                resetConsent();
+                window.location.reload();
+              }}
+              className="mt-2 w-full rounded-full border border-line py-2 text-[13px] font-medium"
+            >
+              Replay onboarding
             </button>
           </motion.div>
         )}
