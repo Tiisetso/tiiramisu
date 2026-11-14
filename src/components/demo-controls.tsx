@@ -7,6 +7,7 @@ import { useMood } from "@/components/mood-provider";
 import { EASE_SOFT } from "@/components/motion";
 import { DAYS } from "@/lib/demo/persona";
 import { MOODS } from "@/lib/mood";
+import { clearVoiceBaseline } from "@/lib/voice/baseline";
 import { useDemoMode } from "@/lib/use-client";
 
 const JUMPS = [
@@ -20,6 +21,7 @@ const JUMPS = [
 export function DemoControls() {
   const enabled = useDemoMode();
   const [open, setOpen] = useState(false);
+  const [voiceReset, setVoiceReset] = useState(false);
   const { day, setDay, state, moodOverride } = useDemo();
   const { mood, setMood } = useMood();
   if (!enabled) return null;
@@ -28,7 +30,7 @@ export function DemoControls() {
     `rounded-full px-3 py-1.5 text-[13px] font-medium ${active ? "bg-neutral text-on-neutral" : "border border-line"}`;
 
   return (
-    <div className="fixed right-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-50 flex flex-col items-end gap-2">
+    <div className="fixed right-3 bottom-[max(96px,calc(env(safe-area-inset-bottom)+84px))] z-50 flex flex-col items-end gap-2">
       <AnimatePresence>
         {open && (
           <motion.div
@@ -84,6 +86,16 @@ export function DemoControls() {
               ))}
             </div>
             <p className="mt-2 text-[12px] text-fg-2">Current: {mood}</p>
+
+            <button
+              onClick={() => {
+                clearVoiceBaseline();
+                setVoiceReset(true);
+              }}
+              className="mt-4 w-full rounded-full border border-line py-2 text-[13px] font-medium"
+            >
+              {voiceReset ? "Voice baseline cleared · next check-in sets it" : "Reset voice baseline"}
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

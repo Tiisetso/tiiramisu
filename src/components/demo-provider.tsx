@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState, useSyncExternalStore } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { MoodProvider } from "@/components/mood-provider";
+import type { AnalyzeResponse, VoiceDeltas } from "@/lib/analysis";
 import { DAYS, DEMO_DAYS, PERSONA, type DayData } from "@/lib/demo/persona";
 import type { Mood } from "@/lib/mood";
 import { computeDayState, type DayState, type DriftLevel } from "@/lib/signals";
@@ -20,6 +21,20 @@ interface DemoContextValue {
   today: DayData;
   state: DayState;
   moodOverride: Mood | null;
+  /** live mic level 0..1 for the orb + light field */
+  levelRef: React.RefObject<number>;
+  /** temporary mood while an activity runs (e.g. "listening"); null = automatic */
+  setActivityMood: (m: Mood | null) => void;
+  /** today's check-in result, shared with Today (#6) and the response loop (#8) */
+  checkin: CheckinResult | null;
+  setCheckin: (c: CheckinResult | null) => void;
+}
+
+export interface CheckinResult {
+  day: number;
+  response: AnalyzeResponse;
+  voice: { phrase: string; deltas: VoiceDeltas } | null;
+  isBaseline: boolean;
 }
 
 const DemoContext = createContext<DemoContextValue | null>(null);
@@ -47,16 +62,31 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const urlDay = useUrlDay();
   const [chosenDay, setChosenDay] = useState<number | null>(null);
   const [moodOverride, setMoodOverride] = useState<Mood | null>(null);
+  const [activityMood, setActivityMood] = useState<Mood | null>(null);
+  const [checkin, setCheckin] = useState<CheckinResult | null>(null);
+  const levelRef = useRef(0);
 
   const day = chosenDay ?? urlDay ?? DAYS - 1;
   const setDay = useCallback((d: number) => setChosenDay(clampDay(d)), []);
 
   const state = useMemo(() => computeDayState(DEMO_DAYS, day), [day]);
-  const mood = moodOverride ?? LEVEL_MOOD[state.level];
+  const mood = moodOverride ?? activityMood ?? LEVEL_MOOD[state.level];
 
   const value = useMemo<DemoContextValue>(
-    () => ({ persona: PERSONA, days: DEMO_DAYS, day, setDay, today: DEMO_DAYS[day], state, moodOverride }),
-    [day, setDay, state, moodOverride],
+    () => ({
+      persona: PERSONA,
+      days: DEMO_DAYS,
+      day,
+      setDay,
+      today: DEMO_DAYS[day],
+      state,
+      moodOverride,
+      levelRef,
+      setActivityMood,
+      checkin: checkin?.day === day ? checkin : null,
+      setCheckin,
+    }),
+    [day, setDay, state, moodOverride, checkin],
   );
 
   return (

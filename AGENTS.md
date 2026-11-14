@@ -63,7 +63,7 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 | 1 | 1 | Scaffold Next.js + Vercel | in review |
 | 2 | 1 | Design system + light field | in review |
 | 3 | 1 | Demo persona + time slider | in review |
-| 4 | 1 | Voice check-in (on-device features) | todo |
+| 4 | 1 | Voice check-in (on-device features) | in review |
 | 5 | 1 | `/api/analyze` (ElevenLabs STT → Claude) | in review |
 | 6 | 1 | Today screen | todo |
 | 7 | 2 | Adaptive soundscape | todo |
@@ -84,3 +84,5 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 - **Demo arc (Aino, `src/lib/demo/persona.ts`):** steady → wobble "watch" days 32–35 (recovers) → steady → "watch" day 52 → "drifting" 53–59. Self-reported mood barely drops while passive signals do (pitch point: the app notices first). URL: `?demo=1&day=44`.
 - **Signals (`src/lib/signals.ts`):** 7 signals vs a 28-day personal baseline (excluding the last 7 days); z-scores with SD floors, capped at 4; weighted drift score → steady / watch / drifting.
 - **`/api/analyze`:** ElevenLabs Scribe (v2, falls back to v1, audio-event tags) → `claude-opus-5-5` structured output (Zod, effort `low`, server-side refusal fallbacks). ~4–6 s. Never fails the demo: canned per-drift-level response with `source: "fallback"`. `risk_flag: "reach_out"` must open the crisis sheet.
+- **Voice check-in:** features computed on device (`src/lib/voice/`): RMS + autocorrelation pitch per frame → speaking rate, pause ratio, pitch variability, loudness. The **first check-in on a device becomes "your usual voice"** (localStorage); later ones are compared to it. Demo: reset the baseline in the ◐ drawer, record normally on day 44, then tired on day 58. Sample buttons (`?demo=1`) send canned transcripts; no real sample audio yet.
+- **Crisis sheet:** 112, MIELI Crisis Helpline 09 2525 0111 (Finnish, 24/7), MIELI English chat (English phone line closed 2026). Verify before the demo.
