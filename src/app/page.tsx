@@ -3,6 +3,7 @@
 import { AnimatePresence } from "motion/react";
 import { useState } from "react";
 import { BeginScreen } from "@/components/begin-screen";
+import { CheckinScreen } from "@/components/checkin/checkin-screen";
 import { DemoControls } from "@/components/demo-controls";
 import { DemoProvider, useDemo } from "@/components/demo-provider";
 import { LightField } from "@/components/light-field";
@@ -11,25 +12,36 @@ import { Button, FadeRise } from "@/components/motion";
 export default function Home() {
   return (
     <DemoProvider>
-      <LightField />
+      <Field />
       <App />
       <DemoControls />
     </DemoProvider>
   );
 }
 
+function Field() {
+  const { levelRef } = useDemo();
+  return <LightField levelRef={levelRef} />;
+}
+
+type Screen = "begin" | "today" | "checkin";
+
 function App() {
-  const [started, setStarted] = useState(false);
+  const [screen, setScreen] = useState<Screen>("begin");
   const { persona } = useDemo();
   return (
     <AnimatePresence mode="wait">
-      {started ? (
-        <FadeRise key="home" className="flex flex-1">
-          <DataPreview />
+      {screen === "checkin" ? (
+        <FadeRise key="checkin" className="flex flex-1">
+          <CheckinScreen onDone={() => setScreen("today")} />
+        </FadeRise>
+      ) : screen === "today" ? (
+        <FadeRise key="today" className="flex flex-1">
+          <DataPreview onCheckin={() => setScreen("checkin")} />
         </FadeRise>
       ) : (
         <FadeRise key="begin" className="flex flex-1 flex-col">
-          <BeginScreen name={persona.name} onBegin={() => setStarted(true)} />
+          <BeginScreen name={persona.name} onBegin={() => setScreen("today")} />
         </FadeRise>
       )}
     </AnimatePresence>
@@ -39,8 +51,8 @@ function App() {
 const fmtDuration = (min: number) => `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, "0")}m`;
 
 /** Temporary: proves the demo data flows through. Replaced by the Today screen (#6). */
-function DataPreview() {
-  const { today, state } = useDemo();
+function DataPreview({ onCheckin }: { onCheckin: () => void }) {
+  const { today, state, checkin } = useDemo();
   const lead = state.top[0];
 
   return (
@@ -73,7 +85,17 @@ function DataPreview() {
       </div>
 
       <div className="mt-4 flex flex-col gap-3">
-        <Button>Start check-in</Button>
+        {checkin ? (
+          <div className="glass p-6">
+            <p className="eyebrow text-fg-2">Today&rsquo;s check-in</p>
+            <p className="mt-2 font-serif text-[22px] font-light leading-snug">{checkin.response.analysis.gentle_reflection}</p>
+            <button onClick={onCheckin} className="mt-3 text-sm font-medium text-fg-2 underline-offset-4 hover:underline">
+              See check-in
+            </button>
+          </div>
+        ) : (
+          <Button onClick={onCheckin}>Start check-in</Button>
+        )}
       </div>
     </main>
   );
