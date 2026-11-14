@@ -2,10 +2,13 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AUTO_REPLIES, PEER_SCRIPT, SEED_MESSAGES, type Message, type PersonId, type RoomId } from "@/lib/chat";
+import { liveGet, livePost, useLive } from "@/lib/live";
 
 /**
  * Chat for the demo. Two windows (e.g. `/` and `/?as=maya`) talk live through
- * BroadcastChannel. If the other person isn't open anywhere, a scripted reply comes back.
+ * BroadcastChannel (same browser) and, when the Aiven database is configured, across devices
+ * via /api/messages polling. If the other person isn't open anywhere, a scripted reply comes back
+ * (scripted messages stay local and are never stored).
  */
 
 type Wire =
@@ -39,6 +42,8 @@ export function ChatProvider({ me, children }: { me: PersonId; children: React.R
   const peersWoken = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const messagesRef = useRef(messages);
+  const live = useLive();
+  const serverOnline = useRef(new Set<PersonId>());
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -69,6 +74,7 @@ export function ChatProvider({ me, children }: { me: PersonId; children: React.R
       const now = Date.now();
       const on = new Set<PersonId>();
       lastSeen.current.forEach((t, who) => now - t < 6000 && on.add(who));
+      serverOnline.current.forEach((who) => on.add(who));
       setOnline((prev) => (prev.size === on.size && [...on].every((p) => prev.has(p)) ? prev : on));
     };
     const first = setTimeout(beat, 0);
@@ -83,6 +89,32 @@ export function ChatProvider({ me, children }: { me: PersonId; children: React.R
     };
   }, [me, add]);
 
+  // Cross-device sync through Aiven Postgres (live mode only)
+  useEffect(() => {
+    if (live !== true) return;
+    let since = new Date(Date.now() - 6 * 3600_000).toISOString();
+    let stopped = false;
+    const poll = async () => {
+      const d = await liveGet<{ now: string; messages: Message[]; online: PersonId[] }>(
+        `/api/messages?since=${encodeURIComponent(since)}&who=${me}`,
+      );
+      if (stopped || !d) return;
+      since = new Date(new Date(d.now).getTime() - 4000).toISOString(); // small overlap; ids dedupe
+      serverOnline.current = new Set(d.online);
+      if (d.messages.length) {
+        add(d.messages);
+        const reported = new Set(d.messages.filter((m) => m.reported).map((m) => m.id));
+        if (reported.size) setMessages((cur) => cur.map((m) => (reported.has(m.id) && !m.reported ? { ...m, reported: true } : m)));
+      }
+    };
+    void poll();
+    const iv = setInterval(poll, 2000);
+    return () => {
+      stopped = true;
+      clearInterval(iv);
+    };
+  }, [live, me, add]);
+
   const post = useCallback(
     (m: Message) => {
       add([m]);
@@ -93,12 +125,14 @@ export function ChatProvider({ me, children }: { me: PersonId; children: React.R
 
   const send = useCallback(
     (room: RoomId, text: string, kind: Message["kind"] = "text") => {
-      post({ id: uid(), room, from: me, text, at: Date.now(), kind });
+      const message: Message = { id: uid(), room, from: me, text, at: Date.now(), kind };
+      post(message);
+      void livePost("/api/messages", message); // only real, person-written messages are stored
 
       // scripted reply if the other side isn't actually open
       const auto = AUTO_REPLIES[room];
       if (!auto || me !== "aino") return;
-      const realOnline = Date.now() - (lastSeen.current.get(auto.from) ?? 0) < 6000;
+      const realOnline = Date.now() - (lastSeen.current.get(auto.from) ?? 0) < 6000 || serverOnline.current.has(auto.from);
       if (realOnline) return;
       const i = replyIndex.current.get(room) ?? 0;
       replyIndex.current.set(room, i + 1);
@@ -113,6 +147,7 @@ export function ChatProvider({ me, children }: { me: PersonId; children: React.R
   const report = useCallback((id: string) => {
     setMessages((cur) => cur.map((m) => (m.id === id ? { ...m, reported: true } : m)));
     channel.current?.postMessage({ type: "report", id } satisfies Wire);
+    void livePost("/api/messages/report", { id });
   }, []);
 
   const wakePeers = useCallback(() => {

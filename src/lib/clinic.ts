@@ -1,5 +1,6 @@
 /** Shared contract for POST /api/clinic-summary (client-safe). */
 import { z } from "zod";
+import type { CheckinAnalysis, VoiceDeltas } from "@/lib/analysis";
 
 export const ClinicSummarySchema = z.object({
   /** 2–3 sentences, clinical but plain */
@@ -26,3 +27,15 @@ export const ACTION_LABEL: Record<ClinicSummary["suggested_action"], string> = {
   message: "Send a message",
   routine: "Routine follow-up",
 };
+
+/** A check-in shared with the clinic (stored in Aiven; never audio). */
+export interface StoredCheckin {
+  id: string;
+  patientId: string;
+  day: number;
+  transcript: string | null;
+  analysis: CheckinAnalysis;
+  voice: { phrase: string; deltas: VoiceDeltas } | null;
+  source: string | null;
+  createdAt: string;
+}

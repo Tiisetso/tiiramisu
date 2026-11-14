@@ -17,3 +17,10 @@ A warm companion that helps people stay well at home after TMS depression treatm
 | Clinician view | `/clinic?day=58` |
 
 The ◐ drawer links to all of these.
+
+## Live mode (shared database)
+
+Set `DATABASE_URL` (Aiven for PostgreSQL) to sync chat across devices and stream check-ins to `/clinic`. Without it the app runs fully locally.
+
+- Create tables: `node --env-file=.env.local scripts/migrate.mjs` (also automatic on first request)
+- Clear demo data before presenting: `node --env-file=.env.local scripts/reset-live.mjs` (`--all` for everything)
