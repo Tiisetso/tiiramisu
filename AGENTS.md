@@ -61,7 +61,7 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 | # | Tier | Issue | Status |
 |---|---|---|---|
 | 1 | 1 | Scaffold Next.js + Vercel | in review |
-| 2 | 1 | Design system + light field | in progress |
+| 2 | 1 | Design system + light field | in review |
 | 3 | 1 | Demo persona + time slider | todo |
 | 4 | 1 | Voice check-in (on-device features) | todo |
 | 5 | 1 | `/api/analyze` (ElevenLabs STT → Claude) | todo |

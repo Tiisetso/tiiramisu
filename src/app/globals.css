@@ -1,27 +1,163 @@
 @import "tailwindcss";
 
-/* Full design tokens land in #2 (DESIGN.md). Minimal base for the scaffold. */
+/* ─────────────────────────────────────────────────────────────
+   Tokens from DESIGN.md. Semantic vars switch for the night world.
+   ───────────────────────────────────────────────────────────── */
 :root {
-  --background: #f7f1e8;
-  --foreground: #1c1b1a;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-fraunces);
+  /* semantic (day) */
+  --bg: #f7f1e8;
+  --fg: #1c1b1a;
+  --fg-2: #6e6b66;
+  --line: #e1dcd3;
+  --card: rgba(255, 255, 255, 0.62);
+  --card-edge: rgba(255, 255, 255, 0.7);
+  --action: #3b5f9e;
+  --on-action: #ffffff;
+  --neutral: #4a4741;
+  --on-neutral: #ffffff;
+  --shadow: 0 12px 40px rgba(57, 34, 30, 0.1);
+  color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #17120f;
-    --foreground: #f3ece2;
+    --bg: #17120f;
+    --fg: #f3ece2;
+    --fg-2: #a89f94;
+    --line: #3a312b;
+    --card: rgba(35, 28, 24, 0.62);
+    --card-edge: rgba(58, 49, 43, 0.9);
+    --action: #8fb0e8;
+    --on-action: #17120f;
+    --neutral: #f3ece2;
+    --on-neutral: #17120f;
+    --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   }
 }
 
+@theme inline {
+  /* semantic */
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-line: var(--line);
+  --color-card: var(--card);
+  --color-action: var(--action);
+  --color-on-action: var(--on-action);
+  --color-neutral: var(--neutral);
+  --color-on-neutral: var(--on-neutral);
+
+  /* fonts */
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), Georgia, serif;
+}
+
+@theme {
+  /* raw palette */
+  --color-canvas: #f7f1e8;
+  --color-surface: #ffffff;
+  --color-surface-warm: #fbf7f1;
+  --color-ink: #1c1b1a;
+  --color-ash: #6e6b66;
+  --color-stone: #4a4741;
+  --color-dusk: #3b5f9e;
+  --color-dusk-pale: #c9d4ea;
+  --color-care: #b4532f;
+  --color-clay: #6b443d;
+  --color-espresso: #39221e;
+  --color-blush: #e8c4b0;
+  --color-gold: #af751b;
+  --color-gold-soft: #ddaa61;
+  --color-gold-pale: #ddbe78;
+  --color-gold-deep: #684d07;
+  --color-forest: #224228;
+  --color-olive: #5c6f5d;
+  --color-sage: #849671;
+  --color-sage-pale: #ced4b8;
+  --color-night: #17120f;
+  --color-night-surface: #231c18;
+
+  /* radius */
+  --radius-card: 24px;
+  --radius-hero: 40px;
+
+  /* motion */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-breathe: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* transparent so the fixed light field (z -10) shows through */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  background: transparent;
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Utilities ── */
+@utility glass {
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius-card);
+  backdrop-filter: blur(24px) saturate(1.1);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+}
+
+@utility glass-raised {
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius-card);
+  backdrop-filter: blur(24px) saturate(1.1);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  box-shadow: var(--shadow);
+}
+
+@utility eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+@utility safe-bottom {
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+/* Fraunces: high optical size + soft for display warmth */
+.font-serif {
+  font-variation-settings: "opsz" 144, "SOFT" 50;
+}
+
+/* ── CSS fallback light field (no WebGL / reduced motion) ── */
+.field-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.9;
+  transition: background-color 3.5s var(--ease-breathe);
+  will-change: transform;
+}
+
+@keyframes drift-a {
+  0%, 100% { transform: translate(-10%, -5%) scale(1); }
+  50% { transform: translate(15%, 20%) scale(1.15); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate(10%, 10%) scale(1.1); }
+  50% { transform: translate(-15%, -10%) scale(0.95); }
+}
+@keyframes drift-c {
+  0%, 100% { transform: translate(0, 15%) scale(1); }
+  50% { transform: translate(-10%, -15%) scale(1.2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-blob {
+    animation: none !important;
+  }
 }
