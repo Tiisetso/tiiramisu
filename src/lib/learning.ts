@@ -114,7 +114,7 @@ const BECAUSE: Record<SignalKey, string> = {
   mood: "your mood has been lower",
 };
 
-export const interventionName = (i: Intervention, friend = "Maya") => NAME[i].replace("Maya", friend);
+export const interventionName = (i: Intervention, friend = "Maya") => (NAME[i] ?? "That").replace("Maya", friend);
 
 /** One-line "why this?" in the DESIGN.md voice. */
 export function explain(r: Ranked, friend = "Maya"): string {
