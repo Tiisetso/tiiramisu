@@ -68,7 +68,7 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 | 6 | 1 | Today screen | in review |
 | 7 | 2 | Adaptive soundscape | in review |
 | 8 | 2 | Response loop + learning | in review |
-| 9 | 3 | Circle: friends + anonymous peers | todo |
+| 9 | 3 | Circle: friends + anonymous peers | in review |
 | 10 | 3 | Apple Shortcut ingest | todo |
 | 11 | 4 | Clinician view | todo |
 | 12 | 4 | Demo video | todo |
@@ -88,3 +88,4 @@ Secrets: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`. Set in Vercel and `.env.loca
 - **Crisis sheet:** 112, MIELI Crisis Helpline 09 2525 0111 (Finnish, 24/7), MIELI English chat (English phone line closed 2026). Verify before the demo.
 - **Soundscape (`src/lib/sound/engine.ts`):** Tone.js pads + sparse bells per mood (chords, tempo, filter) over ElevenLabs Sound Effects loops in `public/audio/` (generated once by `scripts/generate-ambience.mts`, levelled in code). calm → forest, low → rain, bright → sea, night → night. Starts on the Begin tap; ducks to silence while the mic records.
 - **Learning (`src/lib/learning.ts`):** per-person Beta posterior of "did that help?" per intervention + relevance bonus (biggest for the most-shifted signal) + small bonus for Claude's suggestion. Aino has ~20 seeded outcomes; ◐ drawer → "Fresh user" shows the same day ranked for someone the app doesn't know yet.
+- **Circle (`src/lib/chat.ts`, `chat-provider.tsx`):** live chat between windows via `BroadcastChannel` (no backend). Open `/?as=maya` in a second window to be Maya's phone; she sees only Aino's soft status. Scripted replies only when the real person isn't open. Peer room is anonymous (Aino = "Cloudberry"), has Report, and a crisis-phrase check opens the crisis sheet.

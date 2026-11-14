@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useChat } from "@/components/chat-provider";
 import { useDemo } from "@/components/demo-provider";
 import { useLearning } from "@/components/learning-provider";
 import { Button, EASE_SOFT } from "@/components/motion";
@@ -51,10 +52,10 @@ export function ActivitySheet({
 }) {
   const { persona, setActivityMood, levelRef } = useDemo();
   const { record, tallies } = useLearning();
+  const chat = useChat();
   const friend = persona.circle[0];
   const [step, setStep] = useState<Step>("do");
-  const [sent, setSent] = useState<string | null>(null);
-  const [reply, setReply] = useState(false);
+  const [sentAt, setSentAt] = useState<number | null>(null);
   const [answer, setAnswer] = useState<boolean | null>(null);
   const phase = useBreathPhase(intervention === "breathe" && step === "do");
 
@@ -63,17 +64,10 @@ export function ActivitySheet({
   if (intervention !== openFor) {
     setOpenFor(intervention);
     setStep("do");
-    setSent(null);
-    setReply(false);
+    setSentAt(null);
     setAnswer(null);
   }
 
-  // friend replies a moment after a wave
-  useEffect(() => {
-    if (!sent) return;
-    const t = setTimeout(() => setReply(true), 2200);
-    return () => clearTimeout(t);
-  }, [sent]);
 
   const finish = (helped: boolean | null) => {
     if (!intervention) return;
@@ -115,32 +109,46 @@ export function ActivitySheet({
               <>
                 <h2 className="font-serif text-[28px] font-light leading-tight">Wave to {friend}</h2>
                 <p className="mt-3 text-base text-fg-2">No need for a long message. One tap is enough.</p>
-                {!sent ? (
+                {sentAt === null ? (
                   <div className="mt-6 flex flex-col gap-2">
                     {PRESETS.map((m) => (
-                      <button key={m} onClick={() => setSent(m)} className="rounded-full border border-line bg-card px-5 py-3 text-left text-base">
+                      <button
+                        key={m}
+                        onClick={() => {
+                          setSentAt(Date.now() - 1);
+                          chat.send("maya", m);
+                        }}
+                        className="rounded-full border border-line bg-card px-5 py-3 text-left text-base"
+                      >
                         {m}
                       </button>
                     ))}
                   </div>
                 ) : (
                   <div className="mt-6 flex flex-col gap-2">
-                    <p className="ml-auto max-w-[80%] rounded-[20px_20px_6px_20px] bg-action px-4 py-2.5 text-on-action">{sent}</p>
-                    {reply ? (
-                      <motion.p
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mr-auto max-w-[80%] rounded-[20px_20px_20px_6px] bg-surface px-4 py-2.5 text-ink"
-                      >
-                        Aw, wave back! Sunday walk by the sea? 🌊
-                      </motion.p>
-                    ) : (
+                    {chat.messages
+                      .filter((m) => m.room === "maya" && m.at >= sentAt)
+                      .map((m) => (
+                        <motion.p
+                          key={m.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={
+                            m.from === "aino"
+                              ? "ml-auto max-w-[80%] rounded-[20px_20px_6px_20px] bg-action px-4 py-2.5 text-on-action"
+                              : "mr-auto max-w-[80%] rounded-[20px_20px_20px_6px] bg-surface px-4 py-2.5 text-ink"
+                          }
+                        >
+                          {m.text}
+                        </motion.p>
+                      ))}
+                    {!chat.messages.some((m) => m.room === "maya" && m.at >= sentAt && m.from !== "aino") && (
                       <p className="text-[13px] text-fg-2">Sent to {friend}</p>
                     )}
                   </div>
                 )}
                 <div className="mt-8 flex flex-col gap-3">
-                  <Button onClick={() => setStep("ask")} disabled={!sent}>
+                  <Button onClick={() => setStep("ask")} disabled={sentAt === null}>
                     Done
                   </Button>
                   <Button variant="ghost" onClick={onClose}>
