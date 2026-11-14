@@ -49,6 +49,16 @@ create table if not exists presence (
   seen_at timestamptz not null default now()
 );
 
+create table if not exists build_attestations (
+  id bigserial primary key,
+  run_id text,
+  sha text,
+  branch text,
+  status text,
+  report jsonb,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists clinic_actions (
   id uuid primary key default gen_random_uuid(),
   patient_id text not null,
