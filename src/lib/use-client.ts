@@ -29,3 +29,12 @@ export function useDemoMode() {
     () => false,
   );
 }
+
+/** `?as=maya` turns this window into Maya's phone for the live two-window demo. */
+export function useActAs() {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => (new URLSearchParams(window.location.search).get("as") === "maya" ? "maya" : null),
+    () => null,
+  );
+}

@@ -7,23 +7,34 @@ import { CheckinScreen } from "@/components/checkin/checkin-screen";
 import { DemoControls } from "@/components/demo-controls";
 import { DemoProvider, useDemo } from "@/components/demo-provider";
 import { CalmScreen } from "@/components/calm/calm-screen";
+import { ChatProvider } from "@/components/chat-provider";
+import { CircleScreen } from "@/components/circle/circle-screen";
+import { FriendView } from "@/components/circle/friend-view";
 import { LearningProvider } from "@/components/learning-provider";
 import { LightField } from "@/components/light-field";
 import { FadeRise } from "@/components/motion";
 import { SoundProvider, useSound } from "@/components/sound-provider";
 import { TabBar, type Tab } from "@/components/tab-bar";
 import { TodayScreen } from "@/components/today/today-screen";
+import { useActAs } from "@/lib/use-client";
 
 export default function Home() {
+  const actAs = useActAs();
   return (
     <DemoProvider>
       <Field />
-      <LearningProvider>
-        <SoundProvider>
-          <App />
-        </SoundProvider>
-        <DemoControls />
-      </LearningProvider>
+      <ChatProvider me={actAs ?? "aino"}>
+        {actAs === "maya" ? (
+          <FriendView />
+        ) : (
+          <LearningProvider>
+            <SoundProvider>
+              <App />
+            </SoundProvider>
+            <DemoControls />
+          </LearningProvider>
+        )}
+      </ChatProvider>
     </DemoProvider>
   );
 }
@@ -37,6 +48,7 @@ type Screen = "begin" | Tab;
 
 function App() {
   const [screen, setScreen] = useState<Screen>("begin");
+  const [immersive, setImmersive] = useState(false);
   const { persona } = useDemo();
   const sound = useSound();
 
@@ -74,23 +86,19 @@ function App() {
         )}
         {screen === "circle" && (
           <FadeRise key="circle" className="flex flex-1">
-            <Placeholder />
+            <CircleScreen onThreadOpen={setImmersive} />
           </FadeRise>
         )}
       </AnimatePresence>
-      {screen !== "checkin" && <TabBar active={screen} onChange={setScreen} />}
+      {screen !== "checkin" && !(screen === "circle" && immersive) && (
+        <TabBar
+          active={screen}
+          onChange={(t) => {
+            setImmersive(false);
+            setScreen(t);
+          }}
+        />
+      )}
     </>
-  );
-}
-
-/** Until Circle (#9) lands. */
-function Placeholder() {
-  const copy = { eyebrow: "Circle", title: "The people who've got you.", body: "Friends and peers who've been through TMS, a wave away." };
-  return (
-    <main className="mx-auto flex w-full max-w-[560px] flex-col justify-center px-5 pb-32 text-center">
-      <p className="eyebrow text-fg-2">{copy.eyebrow}</p>
-      <h1 className="mt-4 font-serif text-[36px] font-light leading-tight">{copy.title}</h1>
-      <p className="mt-4 text-base text-fg-2">{copy.body}</p>
-    </main>
   );
 }
