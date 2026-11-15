@@ -12,7 +12,33 @@ import { BreathingGuide } from "@/components/breathing-guide";
 import { stepFor } from "@/lib/steps";
 import { bloom, soften } from "@/lib/field-events";
 
-type Step = "do" | "ask" | "thanks";
+type Step = "predict" | "do" | "ask" | "thanks";
+
+/** Same scale before and after, so the gap is comparable (docs/references.md #8). */
+const SCALE = ["Not at all", "A little", "Some", "Quite a bit", "A lot"];
+const ORB = ["#b98f84", "#d2a98c", "#e3c39a", "#e4c27e", "#ddaa61"];
+
+function Scale({ onPick }: { onPick: (v: number, el: Element) => void }) {
+  return (
+    <div className="mt-8">
+      <div className="flex justify-between gap-2" role="radiogroup" aria-label="From not at all to a lot">
+        {SCALE.map((label, i) => (
+          <button
+            key={label}
+            role="radio"
+            aria-checked={false}
+            aria-label={label}
+            onClick={(e) => onPick(i + 1, e.currentTarget)}
+            className="flex flex-col items-center gap-2"
+          >
+            <span className="size-13 rounded-full shadow-[inset_0_-6px_16px_rgba(107,68,61,0.15)] transition-transform active:scale-95" style={{ background: ORB[i] }} />
+            <span className="w-14 text-center text-[11px] leading-tight text-fg-2">{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const PRESETS = ["Thinking of you", "Fancy a short walk this week?", "Just sending a wave"];
 
@@ -37,24 +63,33 @@ export function ActivitySheet({
   const [step, setStep] = useState<Step>("do");
   const [sentAt, setSentAt] = useState<number | null>(null);
   const [answer, setAnswer] = useState<boolean | null>(null);
+  const [expected, setExpected] = useState<number | null>(null);
+  const [better, setBetter] = useState(false);
 
   // reset when a new step is opened
   const [openFor, setOpenFor] = useState<Intervention | null>(null);
   if (intervention !== openFor) {
     setOpenFor(intervention);
-    setStep("do");
+    setStep(intervention && intervention !== "soundscape" ? "predict" : "do");
     setSentAt(null);
     setAnswer(null);
+    setExpected(null);
+    setBetter(false);
   }
 
 
-  const finish = (helped: boolean | null, el?: Element) => {
-    if (helped === true) bloom("big"); // in the open space above the sheet, where it can be seen
-    else if (helped === null) bloom("small", el);
+  /** actual: 1–5 on the same scale as the prediction, or null for "not sure" */
+  const finish = (actual: number | null, el?: Element) => {
+    const helped = actual === null ? null : actual >= 2;
+    const beat = expected !== null && actual !== null && actual > expected;
+    if (beat || (actual ?? 0) >= 3) bloom("big"); // in the open space above the sheet, where it can be seen
+    else if (actual === 2) bloom("medium", el);
+    else if (actual === null) bloom("small", el);
     else soften();
     if (!intervention) return;
-    record(intervention, helped);
+    record(intervention, helped, expected, actual);
     setAnswer(helped);
+    setBetter(beat);
     setStep("thanks");
     if (helped) {
       setActivityMood("bright");
@@ -87,6 +122,23 @@ export function ActivitySheet({
             className="relative w-full max-w-[560px] rounded-t-[40px] bg-bg px-6 pt-8 text-fg shadow-[var(--shadow)] safe-bottom"
           >
             <div className="mx-auto mb-6 h-1 w-10 rounded-full bg-line" />
+
+            {step === "predict" && (
+              <>
+                <p className="eyebrow text-fg-2">Before you start</p>
+                <h2 className="mt-2 font-serif text-[28px] font-light leading-tight">How much do you think this will help?</h2>
+                <p className="mt-3 text-base text-fg-2">There&rsquo;s no right answer. Just a guess.</p>
+                <Scale
+                  onPick={(v) => {
+                    setExpected(v);
+                    setStep("do");
+                  }}
+                />
+                <button onClick={() => setStep("do")} className="mt-6 w-full py-2 text-sm font-medium text-fg-2">
+                  Skip
+                </button>
+              </>
+            )}
 
             {step === "do" && intervention === "message_friend" && (
               <>
@@ -182,23 +234,28 @@ export function ActivitySheet({
 
             {step === "ask" && (
               <>
-                <h2 className="font-serif text-[28px] font-light leading-tight">Did that help, even a little?</h2>
+                <p className="eyebrow text-fg-2">How was it?</p>
+                <h2 className="mt-2 font-serif text-[28px] font-light leading-tight">How much did it help?</h2>
                 <p className="mt-3 text-base text-fg-2">Your answer helps me learn what works for you.</p>
-                <div className="mt-8 flex flex-col gap-3">
-                  <Button onClick={(e) => finish(true, e.currentTarget)}>Yes, a bit</Button>
-                  <Button variant="secondary" onClick={() => finish(false)}>
-                    Not really
-                  </Button>
-                  <Button variant="ghost" onClick={(e) => finish(null, e.currentTarget)}>
-                    Not sure
-                  </Button>
-                </div>
+                <Scale onPick={(v, el) => finish(v, el)} />
+                <button onClick={(e) => finish(null, e.currentTarget)} className="mt-6 w-full py-2 text-sm font-medium text-fg-2">
+                  Not sure
+                </button>
               </>
             )}
 
             {step === "thanks" && (
               <>
-                <h2 className="font-serif text-[28px] font-light leading-tight">{thanks}</h2>
+                {better ? (
+                  <>
+                    <h2 className="font-serif text-[28px] font-light leading-tight">
+                      That felt <span className="italic">better</span> than you expected.
+                    </h2>
+                    <p className="mt-3 text-base text-fg-2">Worth remembering, next time it feels hard to start. {thanks}</p>
+                  </>
+                ) : (
+                  <h2 className="font-serif text-[28px] font-light leading-tight">{thanks}</h2>
+                )}
                 <div className="mt-8 flex flex-col gap-3">
                   <Button onClick={onClose}>Back to today</Button>
                 </div>

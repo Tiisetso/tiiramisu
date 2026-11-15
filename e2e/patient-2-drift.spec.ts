@@ -32,9 +32,11 @@ test("day 58 → drift insight → tired voice is noticed → wave to Maya helps
   // respond → learn
   await page.getByRole("button", { name: "Back to today" }).click();
   await page.locator("main").getByRole("button", { name: /Send Maya a wave|Wave to Maya/ }).click();
+  await page.getByRole("radio", { name: "A little" }).click(); // predict: expects a little
   await page.getByRole("button", { name: "Thinking of you" }).click();
   await page.getByRole("button", { name: "Done" }).click();
-  await page.getByRole("button", { name: "Yes, a bit" }).click();
+  await page.getByRole("radio", { name: "Quite a bit" }).click(); // notice: it helped more
+  await expect(page.getByRole("dialog")).toContainText("better than you expected");
   await expect(page.getByRole("dialog")).toContainText("helped you 4 of 4 times");
   await snap(page, "5 · it helped: the app learned");
   await page.getByRole("button", { name: "Back to today" }).click();

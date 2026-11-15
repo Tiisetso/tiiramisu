@@ -3,12 +3,13 @@
 import { useDemo } from "@/components/demo-provider";
 import { useLearning } from "@/components/learning-provider";
 import { INTERVENTIONS } from "@/lib/analysis";
-import { interventionName } from "@/lib/learning";
+import { gapLine, interventionName } from "@/lib/learning";
 
 /** "What helps you": meter list of the person's own answers (dataviz: name · bar · figure). */
 export function WhatHelps() {
   const { persona } = useDemo();
-  const { tallies } = useLearning();
+  const { tallies, gaps } = useLearning();
+  const surprise = gaps.find((g) => g.gap >= 0.8 && g.n >= 2);
   const rows = INTERVENTIONS.map((i) => ({ i, ...tallies[i] }))
     .filter((r) => r.tried > 0)
     .sort((a, b) => b.mean - a.mean || b.tried - a.tried)
@@ -44,6 +45,12 @@ export function WhatHelps() {
             </li>
           ))}
         </ul>
+      )}
+      {surprise && (
+        <p className="mt-5 border-t border-line pt-4 font-serif text-[18px] font-light leading-snug">
+          {gapLine(surprise.intervention, persona.circle[0])}{" "}
+          <span className="text-fg-2">Worth remembering when it&rsquo;s hard to start.</span>
+        </p>
       )}
     </div>
   );
