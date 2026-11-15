@@ -42,7 +42,7 @@ export function CircleScreen({ onThreadOpen }: { onThreadOpen?: (open: boolean) 
 
   const last = (room: RoomId) => messages.filter((m) => m.room === room).at(-1);
   const wave = (room: RoomId) => {
-    bloom("small");
+    bloom("small", undefined, `waved to ${PEOPLE[room as keyof typeof PEOPLE]?.name ?? "a friend"}`);
     send(room, "👋 Just a wave", "wave");
     setWaved((w) => new Set(w).add(room));
   };

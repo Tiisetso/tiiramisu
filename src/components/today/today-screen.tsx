@@ -10,6 +10,7 @@ import { useLearning } from "@/components/learning-provider";
 import { useSound } from "@/components/sound-provider";
 import { ActivitySheet } from "@/components/today/activity-sheet";
 import { OutreachCard } from "@/components/today/outreach-card";
+import { LightToday } from "@/components/today/light-today";
 import { WhatHelps } from "@/components/today/what-helps";
 import type { Intervention } from "@/lib/analysis";
 import { explain } from "@/lib/learning";
@@ -145,6 +146,10 @@ export function TodayScreen({ onCheckin, onOpenCalm }: { onCheckin: () => void; 
           <p className="mt-2 font-serif text-[32px] font-light leading-none">{(avgSteps / 1000).toFixed(1)}k</p>
           <p className="mt-2 text-[13px] text-fg-2">steps a day on average</p>
         </div>
+      </FadeRise>
+
+      <FadeRise index={5}>
+        <LightToday />
       </FadeRise>
 
       <FadeRise index={5} className="mt-4">

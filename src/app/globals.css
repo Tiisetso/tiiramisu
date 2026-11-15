@@ -169,3 +169,17 @@ body {
     animation: none !important;
   }
 }
+
+/* "Your light today" motes: soft gold, gently twinkling */
+.mote {
+  background: radial-gradient(circle, #fff3cf 0%, #f0c46e 38%, rgba(221, 170, 97, 0.35) 62%, rgba(221, 170, 97, 0) 72%);
+  box-shadow: 0 0 18px 4px rgba(221, 170, 97, 0.45);
+  animation: mote-glow 6s var(--ease-breathe) infinite;
+}
+@keyframes mote-glow {
+  0%, 100% { opacity: 0.55; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mote { animation: none; }
+}

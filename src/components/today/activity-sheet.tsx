@@ -40,6 +40,16 @@ function Scale({ onPick }: { onPick: (v: number, el: Element) => void }) {
   );
 }
 
+/** today's recap phrase per activity */
+const DID: Record<Intervention, string> = {
+  walk: "went outside",
+  light: "let the light in",
+  breathe: "breathed slowly",
+  message_friend: "reached out to Maya",
+  soundscape: "listened to calm sounds",
+  rest: "let yourself rest",
+};
+
 const PRESETS = ["Thinking of you", "Fancy a short walk this week?", "Just sending a wave"];
 
 /**
@@ -184,7 +194,7 @@ export function ActivitySheet({
                   </div>
                 )}
                 <div className="mt-8 flex flex-col gap-3">
-                  <Button onClick={(e) => { bloom("medium", e.currentTarget); setStep("ask"); }} disabled={sentAt === null}>
+                  <Button onClick={(e) => { bloom("medium", e.currentTarget, `waved to ${friend}`); setStep("ask"); }} disabled={sentAt === null}>
                     Done
                   </Button>
                   <Button variant="ghost" onClick={onClose}>
@@ -224,7 +234,7 @@ export function ActivitySheet({
                   </div>
                 )}
                 <div className="mt-8 flex flex-col gap-3">
-                  <Button onClick={(e) => { bloom("medium", e.currentTarget); setStep("ask"); }}>{graded.done}</Button>
+                  <Button onClick={(e) => { bloom("medium", e.currentTarget, intervention ? DID[intervention] : undefined); setStep("ask"); }}>{graded.done}</Button>
                   <Button variant="ghost" onClick={onClose}>
                     Not today
                   </Button>
