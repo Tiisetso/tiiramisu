@@ -17,6 +17,7 @@ const env = process.env;
 const REPO = env.GITHUB_REPOSITORY;
 const JOBS = (env.GUARD_JOBS ?? "build,synthetic-patient").split(",").map((s) => s.trim());
 const CRACI = "https://api.craci.com";
+class Unreachable extends Error {}
 
 /** Packages that would quietly ship people's data somewhere. Health app: none allowed.
  *  Matched against the full npm name (scope included), anchored: no substring false positives. */
@@ -44,25 +45,47 @@ const EXPECTED = {
 /** Where people's data may go while the app runs (the data-flow attestation). */
 const DATA_PROCESSORS = { "api.elevenlabs.io": "voice → speech-to-text", "api.anthropic.com": "transcript → Claude analysis" };
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const RETRY_MS = Number(env.GUARD_RETRY_MS ?? 10_000);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms === 10_000 ? RETRY_MS : ms));
 const summary = (md) => env.GITHUB_STEP_SUMMARY && appendFileSync(env.GITHUB_STEP_SUMMARY, md + "\n");
 
 async function craci(path, accept = "application/json") {
-  // SBOM/trace are served only once a job is terminal; retry 404/409/503 for a few minutes.
+  // SBOM/trace are served only once a job is terminal: retry 404/409/503, and network errors,
+  // for a few minutes.
+  let lastNetworkError = null;
   for (let i = 0; i < 18; i++) {
-    const r = await fetch(`${CRACI}${path}`, { headers: { Authorization: `Bearer ${env.CRACI_API_TOKEN}`, Accept: accept } });
+    let r;
+    try {
+      r = await fetch(`${CRACI}${path}`, { headers: { Authorization: `Bearer ${env.CRACI_API_TOKEN}`, Accept: accept }, signal: AbortSignal.timeout(20_000) });
+    } catch (e) {
+      lastNetworkError = e;
+      await sleep(10_000);
+      continue;
+    }
     if (r.ok) return r.json();
-    if (![404, 409, 503].includes(r.status)) throw new Error(`${path} → ${r.status} ${await r.text()}`);
+    if (![404, 409, 502, 503, 504].includes(r.status)) throw new Error(`${path} → ${r.status} ${await r.text()}`);
     await sleep(10_000);
   }
+  if (lastNetworkError) throw new Unreachable(`CRACI API unreachable (${lastNetworkError.cause?.code ?? lastNetworkError.message})`);
   throw new Error(`${path} not ready after 3 minutes`);
 }
 
 async function githubJobs() {
   const url = `https://api.github.com/repos/${REPO}/actions/runs/${env.GITHUB_RUN_ID}/attempts/${env.GITHUB_RUN_ATTEMPT ?? 1}/jobs?per_page=100`;
-  const r = await fetch(url, { headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json" } });
-  if (!r.ok) throw new Error(`GitHub jobs → ${r.status}`);
-  return (await r.json()).jobs;
+  let last = null;
+  for (let i = 0; i < 6; i++) {
+    try {
+      const r = await fetch(url, { headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json" }, signal: AbortSignal.timeout(20_000) });
+      if (r.ok) return (await r.json()).jobs;
+      if (r.status < 500) throw new Error(`GitHub jobs → ${r.status}`);
+      last = new Error(`GitHub jobs → ${r.status}`);
+    } catch (e) {
+      if (e instanceof Error && e.message.startsWith("GitHub jobs → 4")) throw e;
+      last = e;
+    }
+    await sleep(10_000);
+  }
+  throw new Unreachable(`GitHub API unreachable (${last?.cause?.code ?? last?.message})`);
 }
 
 function flatten(components = []) {
@@ -182,6 +205,13 @@ async function main() {
 }
 
 main().catch((e) => {
+  if (e instanceof Unreachable) {
+    // Don't fail main for a vendor outage, and don't publish: the clinic badge keeps showing the
+    // last *verified* build, so it never claims an unchecked one.
+    summary(`## 🔒 Privacy guard\n⚠️ Couldn't verify this build: ${e.message}. No attestation published.`);
+    console.warn(e.message);
+    return;
+  }
   summary(`## 🔒 Privacy guard\n❌ Error: ${e.message}`);
   console.error(e);
   process.exit(1);
