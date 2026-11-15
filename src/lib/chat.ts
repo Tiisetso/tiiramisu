@@ -13,7 +13,7 @@ export interface Message {
   text: string;
   /** minutes relative to "now" for seeds (negative), or epoch ms for live messages */
   at: number;
-  kind?: "text" | "wave";
+  kind?: "text" | "wave" | "win";
   reported?: boolean;
 }
 
@@ -54,6 +54,13 @@ export const AUTO_REPLIES: Partial<Record<RoomId, { from: PersonId; texts: strin
   juho: { from: "juho", texts: ["Thanks for the wave. Been a rough week honestly. Coffee soon?"], delay: 3500 },
   mum: { from: "mum", texts: ["Love you! Shall I call tonight?"], delay: 3000 },
   peers: { from: "harbor", texts: ["Thank you for sharing that. You're not the only one.", "Sending a wave your way, Cloudberry."], delay: 4000 },
+};
+
+/** When a friend isn't online, they still celebrate a shared win. */
+export const WIN_REPLIES: Partial<Record<RoomId, string>> = {
+  maya: "That's brilliant. Proud of you 💛",
+  juho: "Nice one! 🙌",
+  mum: "Oh that's lovely to hear, sweetheart ❤️",
 };
 
 /** Gentle peer-room activity while you're there. */
