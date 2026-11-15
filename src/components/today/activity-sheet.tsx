@@ -9,32 +9,10 @@ import { Button, EASE_SOFT } from "@/components/motion";
 import type { Intervention } from "@/lib/analysis";
 import { hasHave, interventionName } from "@/lib/learning";
 import { BreathingGuide } from "@/components/breathing-guide";
+import { stepFor } from "@/lib/steps";
 import { bloom, soften } from "@/lib/field-events";
 
 type Step = "do" | "ask" | "thanks";
-
-const COPY: Record<Exclude<Intervention, "soundscape" | "message_friend">, { title: string; body: string; done: string }> = {
-  walk: {
-    title: "A short walk outside",
-    body: "Ten minutes is plenty. If you like, notice three things you can hear on the way.",
-    done: "I went",
-  },
-  light: {
-    title: "Some morning light",
-    body: "Open the curtains or step outside for ten minutes. Light early in the day helps your body find its rhythm again.",
-    done: "Done",
-  },
-  breathe: {
-    title: "Breathe with me",
-    body: "In for four, out for six. A few rounds is enough.",
-    done: "Done",
-  },
-  rest: {
-    title: "Permission to rest",
-    body: "You don't have to do anything today. Rest is part of staying well, not a step back.",
-    done: "Thank you",
-  },
-};
 
 const PRESETS = ["Thinking of you", "Fancy a short walk this week?", "Just sending a wave"];
 
@@ -50,7 +28,9 @@ export function ActivitySheet({
   onClose: () => void;
   onOpenCalm: () => void;
 }) {
-  const { persona, setActivityMood } = useDemo();
+  const { persona, setActivityMood, state } = useDemo();
+  const graded = intervention ? stepFor(intervention, state.level, persona.circle[0]) : null;
+  const simple = intervention && intervention !== "message_friend" && intervention !== "soundscape";
   const { record, tallies } = useLearning();
   const chat = useChat();
   const friend = persona.circle[0];
@@ -182,17 +162,17 @@ export function ActivitySheet({
               </>
             )}
 
-            {step === "do" && intervention && intervention in COPY && (
+            {step === "do" && simple && graded && (
               <>
-                <h2 className="font-serif text-[28px] font-light leading-tight">{COPY[intervention as keyof typeof COPY].title}</h2>
-                <p className="mt-3 text-base text-fg-2">{COPY[intervention as keyof typeof COPY].body}</p>
+                <h2 className="font-serif text-[28px] font-light leading-tight">{graded.title}</h2>
+                <p className="mt-3 text-base text-fg-2">{graded.body}</p>
                 {intervention === "breathe" && (
                   <div className="my-6">
-                    <BreathingGuide active={step === "do"} size={170} rounds={3} />
+                    <BreathingGuide active={step === "do"} size={170} rounds={graded.rounds ?? 3} />
                   </div>
                 )}
                 <div className="mt-8 flex flex-col gap-3">
-                  <Button onClick={(e) => { bloom("medium", e.currentTarget); setStep("ask"); }}>{COPY[intervention as keyof typeof COPY].done}</Button>
+                  <Button onClick={(e) => { bloom("medium", e.currentTarget); setStep("ask"); }}>{graded.done}</Button>
                   <Button variant="ghost" onClick={onClose}>
                     Not today
                   </Button>

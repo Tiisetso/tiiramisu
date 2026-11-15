@@ -19,7 +19,7 @@ test("day 58 → drift insight → tired voice is noticed → wave to Maya helps
 
   // passive signals → insight
   await expect(page.locator("h2").first()).toContainText("blending");
-  await expect(page.getByText("Wave to Maya").first()).toBeVisible();
+  await expect(page.getByText(/Send Maya a wave|Wave to Maya/).first()).toBeVisible();
   await snap(page, "3 · drifting: the app noticed");
   expect(await page.locator("main").innerText()).not.toMatch(BANNED);
 
@@ -31,7 +31,7 @@ test("day 58 → drift insight → tired voice is noticed → wave to Maya helps
 
   // respond → learn
   await page.getByRole("button", { name: "Back to today" }).click();
-  await page.locator("main").getByRole("button", { name: "Wave to Maya" }).click();
+  await page.locator("main").getByRole("button", { name: /Send Maya a wave|Wave to Maya/ }).click();
   await page.getByRole("button", { name: "Thinking of you" }).click();
   await page.getByRole("button", { name: "Done" }).click();
   await page.getByRole("button", { name: "Yes, a bit" }).click();

@@ -15,7 +15,8 @@ import type { Intervention } from "@/lib/analysis";
 import { explain } from "@/lib/learning";
 import { Sparkline } from "@/components/today/sparkline";
 import { greeting } from "@/lib/greeting";
-import { buildInsight, formatSignalValue, INTERVENTION_LABEL, splitItalic } from "@/lib/insight";
+import { buildInsight, formatSignalValue, splitItalic } from "@/lib/insight";
+import { stepFor } from "@/lib/steps";
 import { useHydrated } from "@/lib/use-client";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -124,7 +125,7 @@ export function TodayScreen({ onCheckin, onOpenCalm }: { onCheckin: () => void; 
                   i === 0 ? "bg-neutral text-on-neutral" : "border border-line bg-card"
                 }`}
               >
-                {r.intervention === "message_friend" ? `Wave to ${persona.circle[0]}` : INTERVENTION_LABEL[r.intervention]}
+                {stepFor(r.intervention, state.level, persona.circle[0]).chip}
               </button>
             ))}
           </div>

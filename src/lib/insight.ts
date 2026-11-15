@@ -26,15 +26,6 @@ const SUGGEST_FOR: Record<SignalKey, Intervention> = {
   mood: "message_friend",
 };
 
-export const INTERVENTION_LABEL: Record<Intervention, string> = {
-  walk: "Walk outside · 10 min",
-  breathe: "Breathe · 3 min",
-  soundscape: "Calm sounds · 5 min",
-  message_friend: "Wave to Maya",
-  light: "Morning light · 10 min",
-  rest: "Permission to rest",
-};
-
 export interface Insight {
   eyebrow: string;
   /** may contain one *italic* span */

@@ -16,7 +16,7 @@ import { useDemoMode } from "@/lib/use-client";
 const JUMPS = [
   { label: "Steady", day: 44 },
   { label: "Wobble", day: 33 },
-  { label: "Watch", day: 52 },
+  { label: "Watch", day: 53 },
   { label: "Drifting", day: 58 },
 ];
 
