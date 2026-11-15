@@ -4,6 +4,7 @@ A warm companion that helps people stay well at home after TMS depression treatm
 
 - Product, goals and working rules: [AGENTS.md](AGENTS.md)
 - Design system: [DESIGN.md](DESIGN.md)
+- Evidence & references (for the submission): [docs/references.md](docs/references.md)
 
 ## Demo URLs
 
