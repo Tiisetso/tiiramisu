@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Tiiramisu · demo stage</title>
+    <!-- Recording stage for the demo film (scripts/video/record.mjs). Frames the real app. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      * { box-sizing: border-box; margin: 0; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; }
+      body {
+        font-family: Inter, system-ui, sans-serif; color: #1c1b1a;
+        background:
+          radial-gradient(900px 700px at 18% 22%, rgba(206, 212, 184, 0.75), transparent 70%),
+          radial-gradient(900px 800px at 85% 80%, rgba(232, 196, 176, 0.8), transparent 70%),
+          radial-gradient(700px 600px at 70% 15%, rgba(221, 190, 120, 0.45), transparent 70%),
+          #f7f1e8;
+      }
+      .serif { font-family: Fraunces, Georgia, serif; font-weight: 300; font-variation-settings: "opsz" 144; }
+      .device { position: absolute; transition: left 1.1s cubic-bezier(.22,1,.36,1), top 1.1s cubic-bezier(.22,1,.36,1), opacity .9s ease, transform 1.1s cubic-bezier(.22,1,.36,1); }
+      .phone { width: 414px; height: 868px; padding: 12px; border-radius: 58px; background: #221b17; box-shadow: 0 40px 90px rgba(57,34,30,.28), inset 0 0 0 2px #3a312b; top: 106px; }
+      .phone iframe { width: 390px; height: 844px; border: 0; border-radius: 46px; background: #f7f1e8; display: block; }
+      .laptop { top: 150px; width: 1160px; height: 760px; padding: 14px; border-radius: 22px; background: #221b17; box-shadow: 0 40px 90px rgba(57,34,30,.25); }
+      .laptop .screen { width: 1132px; height: 708px; overflow: hidden; border-radius: 10px; background: #f7f1e8; }
+      .laptop iframe { width: 1360px; height: 850px; border: 0; transform: scale(.8324); transform-origin: 0 0; }
+      .label { position: absolute; top: -40px; left: 0; right: 0; text-align: center; font-size: 15px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: #6e6b66; }
+      #caption { position: absolute; left: 120px; top: 380px; width: 520px; transition: opacity .8s ease, left 1.1s cubic-bezier(.22,1,.36,1), top 1.1s cubic-bezier(.22,1,.36,1), width 1.1s ease; }
+      #caption .eyebrow { font-size: 16px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #6e6b66; }
+      #caption h2 { margin-top: 16px; font-size: 52px; line-height: 1.1; }
+      #caption p { margin-top: 18px; font-size: 22px; line-height: 1.5; color: #4a4741; }
+      #title { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transition: opacity 1.2s ease; }
+      #title h1 { font-size: 112px; line-height: 1.05; }
+      #title p { margin-top: 26px; font-size: 26px; color: #4a4741; }
+      #title .orb { width: 150px; height: 150px; border-radius: 50%; margin-bottom: 48px; background: linear-gradient(135deg, #ddbe78, #e8c4b0 50%, #c9d4ea); box-shadow: 0 0 120px rgba(221,190,120,.6); animation: breathe 10s cubic-bezier(.45,0,.55,1) infinite; }
+      @keyframes breathe { 0%,100% { transform: scale(.92); } 40% { transform: scale(1.06); } }
+      .hidden { opacity: 0 !important; pointer-events: none; }
+      #caption.compact h2 { font-size: 34px; margin-top: 8px; }
+      #caption.compact p { font-size: 18px; margin-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <div id="title" class="hidden">
+      <div class="orb"></div>
+      <h1 class="serif" id="title-h"></h1>
+      <p id="title-p"></p>
+    </div>
+
+    <div id="caption" class="hidden">
+      <div class="eyebrow" id="cap-eyebrow"></div>
+      <h2 class="serif" id="cap-h"></h2>
+      <p id="cap-p"></p>
+    </div>
+
+    <div id="phone" class="device phone hidden" style="left: 1100px">
+      <div class="label">Aino&rsquo;s phone</div>
+      <iframe id="phone-frame" allow="microphone; autoplay" title="Aino"></iframe>
+    </div>
+    <div id="maya" class="device phone hidden" style="left: 1560px">
+      <div class="label">Maya&rsquo;s phone</div>
+      <iframe id="maya-frame" allow="autoplay" title="Maya"></iframe>
+    </div>
+    <div id="clinic" class="device laptop hidden" style="left: 700px">
+      <div class="label">The clinic</div>
+      <div class="screen"><iframe id="clinic-frame" title="Clinic"></iframe></div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const show = (el, on) => el.classList.toggle("hidden", !on);
+      window.stage = {
+        load(which, url) { $(which + "-frame").src = url; },
+        title(h, p) { $("title-h").textContent = h; $("title-p").textContent = p || ""; show($("title"), true); },
+        hideTitle() { show($("title"), false); },
+        caption(eyebrow, h, p) {
+          $("cap-eyebrow").textContent = eyebrow || ""; $("cap-h").textContent = h || ""; $("cap-p").textContent = p || "";
+          show($("caption"), true);
+        },
+        hideCaption() { show($("caption"), false); },
+        layout(mode) {
+          const phone = $("phone"), maya = $("maya"), clinic = $("clinic"), cap = $("caption");
+          cap.classList.toggle("compact", mode === "clinic");
+          if (mode === "solo") {
+            phone.style.left = "1100px"; show(phone, true); show(maya, false); show(clinic, false);
+            cap.style.left = "160px"; cap.style.top = "380px"; cap.style.width = "700px";
+          } else if (mode === "maya") {
+            phone.style.left = "820px"; maya.style.left = "1330px"; show(phone, true); show(maya, true); show(clinic, false);
+            cap.style.left = "110px"; cap.style.top = "360px"; cap.style.width = "620px";
+          } else if (mode === "clinic") {
+            phone.style.left = "110px"; clinic.style.left = "640px"; show(phone, true); show(maya, false); show(clinic, true);
+            cap.style.left = "640px"; cap.style.top = "932px"; cap.style.width = "1160px";
+          } else if (mode === "none") {
+            show(phone, false); show(maya, false); show(clinic, false);
+          }
+        },
+      };
+    </script>
+  </body>
+</html>
