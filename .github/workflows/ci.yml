@@ -11,14 +11,12 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
-  schedule:
-    - cron: "0 */6 * * *" # canary: a synthetic patient checks in every 6 hours
 
 permissions:
   contents: read
   actions: read
 
-# PRs: a new push replaces the old run. main/schedule: never cancel a run mid-way; the newest queues.
+# PRs: a new push replaces the old run. main: never cancel a run mid-way; the newest queues.
 concurrency:
   group: ci-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
